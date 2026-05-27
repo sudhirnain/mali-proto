@@ -8,48 +8,11 @@ import { useBaby, useMom, useColdMode } from "@/lib/cold-mode";
 import { useEntries } from "@/lib/journal-store";
 import { Illustration } from "./Illustration";
 
-/**
- * Per-week production hero from the Mali "Weekly update" archive. Files are
- * w1..w40 with a few siblings (1.png, 2.png = postpartum, 41/42 = late). We
- * clamp the requested week into the available range and fall back to w1 if
- * something asks before week 1.
- */
-function pregnancyIllustration(week: number): string {
-  const w = Math.max(1, Math.min(40, week));
-  return `/mali-art/weekly/w${w}.png`;
-}
-
 /** Trimester-bucketed mom illustration for the pregnancy center hero. */
 function momIllustration(week: number): string {
   if (week <= 13) return "/mali-illustrations/pregnant_3.png";
   if (week <= 27) return "/mali-illustrations/pregnant_6.png";
   return "/mali-illustrations/pregnant_9.png";
-}
-
-/**
- * Maps the mock sizeFruit name to a clean emoji glyph. The production weekly
- * art is too detailed to read at 48px in the StatStrip ring — emoji renders
- * crisp at any size and matches the size-comparison metaphor directly.
- */
-function fruitEmoji(name: string | undefined): string {
-  switch ((name ?? "").toLowerCase()) {
-    case "avocado": return "🥑";
-    case "squash":
-    case "pumpkin": return "🎃";
-    case "corn": return "🌽";
-    case "watermelon": return "🍉";
-    case "pineapple": return "🍍";
-    case "mango": return "🥭";
-    case "peach": return "🍑";
-    case "lemon": return "🍋";
-    case "strawberry": return "🍓";
-    case "blueberry": return "🫐";
-    case "grape": return "🍇";
-    case "banana": return "🍌";
-    case "apple": return "🍎";
-    case "pear": return "🍐";
-    default: return "🥑";
-  }
 }
 
 /**
@@ -109,9 +72,7 @@ function PregnancyStatStrip() {
   const cold = useColdMode();
   const entries = useEntries();
   const week = baby.week ?? 20;
-  const weeksLeft = Math.max(0, 40 - week);
 
-  // Latest weight-mom entry beats the mock fallback.
   const momWeight = useMemo(() => {
     const ws = entries
       .filter((e) => e.categoryId === "weight-mom")
@@ -120,9 +81,8 @@ function PregnancyStatStrip() {
   }, [entries, mom.weight]);
 
   return (
-    <div className="px-4 pt-3 pb-4">
+    <div className="px-4 pt-2 pb-3">
       <div className="grid grid-cols-[80px_1fr_80px] items-end gap-2">
-        {/* Left — mom's weight */}
         <SideStat
           buttonAria="Your weight chart"
           buttonIcon={<Illustration name="scale-outline" className="w-6 h-6" />}
@@ -133,34 +93,22 @@ function PregnancyStatStrip() {
           emptyCta={{ href: "/log/weight-mom", label: "Add weight" }}
         />
 
-        {/* Center — mom illustration + name + week countdown */}
         <CenterHero
           imageSrc={momIllustration(week)}
           welcome={cold ? `Welcome, ${mom.name}` : mom.name}
-          subline={`Week ${week} · ${weeksLeft} ${weeksLeft === 1 ? "week" : "weeks"} to go`}
+          subline={baby.ageLabel}
         />
 
-        {/* Right — baby size comparison via emoji (renders crisper than the
-         *  production weekly art at 48px). Tap → Your-journey hero.
-         *  Ring treatment matches SideStat (left side) so the two side
-         *  elements read as a pair flanking the center hero. */}
-        <Link
+        {/* Right — baby weight readout, mirrors the left mom-weight stat
+         *  so the strip reads Mom · Sarah · Baby. */}
+        <SideStat
+          buttonAria="Baby weight"
+          buttonIcon={<Illustration name="newborn" className="w-6 h-6" />}
+          buttonStyle="ring"
+          value={baby.weight}
+          caption="Baby's weight"
           href="/journal/moments"
-          aria-label="Baby this week"
-          className="flex flex-col items-center gap-1 min-h-[84px] active:scale-[0.98] transition"
-        >
-          <div className="w-12 h-12 rounded-full border border-[var(--color-primary)]/40 bg-white/40 flex items-center justify-center text-[26px] leading-none">
-            <span aria-hidden>{fruitEmoji(baby.sizeFruit)}</span>
-          </div>
-          {baby.sizeFruit ? (
-            <>
-              <div className="text-xs font-semibold text-neutral-900 leading-tight mt-1">{baby.name}</div>
-              <div className="text-[11px] text-neutral-700 -mt-0.5">{baby.sizeFruit.toLowerCase()}-sized</div>
-            </>
-          ) : (
-            <div className="h-[26px]" aria-hidden />
-          )}
-        </Link>
+        />
       </div>
     </div>
   );

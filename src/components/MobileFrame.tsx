@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { DemoNavigator } from "./DemoNavigator";
 import { BirthHandoff } from "./BirthHandoff";
+import { ActiveTimerChip } from "./ActiveTimerChip";
 import { usePhase } from "@/lib/phase";
 
 /**
@@ -40,6 +41,11 @@ export function MobileFrame({ children }: { children: ReactNode }) {
         <div className="md:h-[844px] flex flex-col h-dvh">
           {children}
         </div>
+
+        {/* Sticky running-timer chip, pinned above the bottom tab bar so a
+         *  sleep / nursing session started in the log form stays visible (and
+         *  resumable) when the user navigates back to feed or journal. */}
+        <ActiveTimerChip />
 
         {/* Pregnancy → parenting transition celebration, scoped to the
          *  phone shell so the overlay fills the device frame on desktop. */}

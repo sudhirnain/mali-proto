@@ -15,6 +15,21 @@ import { JourneyHero } from "./journal/JourneyHero";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
+ * Compact pregnancy quick-log row. Replaces the 3 big QuickLogCards (used
+ * in parenting) with 5 MiniLogTiles in a single row — matches the tight
+ * pregnancy header Jonas mocked. weight-mom moves out of this row (it's now
+ * the left side-stat above), so this row is the full mom-experience tracker
+ * set: symptoms · hydration · sleep · contractions · mood.
+ */
+const PREGNANCY_COMPACT_TILES = [
+  "symptoms",
+  "hydration",
+  "sleep-mom",
+  "contractions",
+  "mom-mood",
+] as const;
+
+/**
  * Phase-aware feed header — the journal's command center.
  *
  * Contents:
@@ -30,50 +45,63 @@ export function FeedHeader() {
   const entries = useEntries();
   const [expanded, setExpanded] = useState(false);
 
+  const isPreg = phase === "pregnancy";
   const quickLogs = defaultQuickLogs(phase);
   const extras = expandedHeaderExtras(phase);
 
-  // Nudge badge: in pregnancy, surface a "log your weight" reminder on the
-  // weight-mom card if it's been more than a week since the last entry (or
-  // there's no entry yet). In a cold-state demo we skip the badge entirely
-  // since "Not yet" already conveys the same message.
+  // Nudge badge: parenting only — surface a "log first thing" reminder on
+  // the first quick-log card if it hasn't been logged in over a week. In
+  // pregnancy the weight-mom CTA now lives in the left side-stat and surfaces
+  // its own "Add weight" empty state, so the badge is no longer needed here.
   const nudgeBadge = useMemo(() => {
-    if (cold || phase === "parenting") return undefined;
+    if (cold || isPreg) return undefined;
     const firstId = quickLogs[0];
     if (!firstId) return undefined;
     const ownEntries = entries.filter((e) => e.categoryId === firstId);
-    if (ownEntries.length === 0) return 1; // never logged
+    if (ownEntries.length === 0) return 1;
     const mostRecentMs = Math.max(...ownEntries.map((e) => new Date(e.at).getTime()));
     return TODAY_DATE.getTime() - mostRecentMs > WEEK_MS ? 1 : undefined;
-  }, [entries, cold, phase, quickLogs]);
+  }, [entries, cold, isPreg, quickLogs]);
 
-  const bgClass = phase === "pregnancy" ? "bg-[var(--color-primary-bright)]" : "bg-[var(--color-primary-soft)]";
+  const bgClass = isPreg ? "bg-[var(--color-primary-bright)]" : "bg-[var(--color-primary-soft)]";
 
   return (
     <section className={`${bgClass} relative md:pt-11`}>
       <StatStrip />
 
-      {/* 3 quick-log cards */}
-      <div className="px-4 flex items-stretch gap-2">
-        {quickLogs.map((id) => (
-          <QuickLogCard
-            key={id}
-            id={id}
-            badge={id === quickLogs[0] ? nudgeBadge : undefined}
-          />
-        ))}
-      </div>
+      {/* Quick-log row — pregnancy uses 5 mini tiles (tighter, all mom-experience
+       *  trackers visible at once); parenting keeps the 3 big QuickLogCards.   */}
+      {isPreg ? (
+        <div className="px-4 grid grid-cols-5 gap-2">
+          {PREGNANCY_COMPACT_TILES.map((id) => (
+            <MiniLogTile key={id} id={id} />
+          ))}
+        </div>
+      ) : (
+        <div className="px-4 flex items-stretch gap-2">
+          {quickLogs.map((id) => (
+            <QuickLogCard
+              key={id}
+              id={id}
+              badge={id === quickLogs[0] ? nudgeBadge : undefined}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Today's pulse — heartbeat of the journal */}
       <JournalPulse />
 
-      {/* Expanded: progress hero + secondary tracker grid (both behind the chevron). */}
+      {/* Expanded: progress hero. Parenting also gets a secondary tracker grid
+       *  (extras aren't already shown elsewhere). Pregnancy drops the grid —
+       *  the 5 compact tiles above already cover the mom-experience set, so a
+       *  second row would just duplicate them. */}
       {expanded && (
         <>
           <div className="px-4 mt-4">
-            {phase === "parenting" ? <MilestoneHero variant="header" /> : <JourneyHero variant="header" />}
+            {isPreg ? <JourneyHero variant="header" /> : <MilestoneHero variant="header" />}
           </div>
-          {extras.length > 0 && (
+          {!isPreg && extras.length > 0 && (
             <div className="px-4 pt-5 pb-2">
               <div className="grid grid-cols-5 gap-2">
                 {extras.map((id) => (

@@ -1,13 +1,14 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getCategory, type Category } from "@/lib/categories";
 import { Illustration } from "@/components/Illustration";
 import { formatTime } from "@/lib/format";
 import { MOCK_KICK_SESSIONS, MOCK_CONTRACTIONS, TODAY_DATE, type Entry } from "@/lib/mock-entries";
 import { useJournalStore } from "@/lib/journal-store";
+import { useActiveTimer } from "@/lib/active-timer";
 
 export default function LogEntryPage() {
   const params = useParams<{ category: string }>();
@@ -132,19 +133,35 @@ function useSaveEntry(cat: Category, editing?: Entry) {
 
 function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const [side, setSide] = useState<"left" | "right" | "both">(() => parseSide(editing?.meta) ?? "right");
-  const [running, setRunning] = useState(false);
   const [minutes, setMinutes] = useState(editing?.durationMin ?? 0);
+  const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
   const showSide = cat.id === "nursing";
   const save = useSaveEntry(cat, editing);
+  const timer = useActiveTimer();
+
+  // Running state is derived from the global active-timer context — that
+  // way the chip and form agree even after navigation. The form drives
+  // start/stop; the context owns the elapsed-time tick.
+  const runningHere = timer.active?.categoryId === cat.id;
+  const liveMinutes = runningHere ? Math.max(1, Math.floor(timer.elapsedSec / 60)) : minutes;
+
+  const onToggle = () => {
+    if (runningHere) {
+      const mins = timer.stop();
+      setMinutes(mins);
+    } else {
+      timer.start(cat.id);
+    }
+  };
 
   return (
     <div className="space-y-5">
       <div className="text-center">
         <div className="serif text-4xl font-semibold text-neutral-900 tabular-nums">
-          {formatTimerClock(minutes)}
+          {runningHere ? formatTimerLive(timer.elapsedSec) : formatTimerClock(minutes)}
         </div>
         <div className="text-xs text-neutral-500 mt-1">
-          {editing ? "Editing entry" : running ? "Running" : "Tap Start to begin"}
+          {editing ? "Editing entry" : runningHere ? "Running — keeps going if you navigate away" : "Tap Start to begin"}
         </div>
       </div>
 
@@ -166,11 +183,11 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
 
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setRunning((r) => !r)}
+          onClick={onToggle}
           className="flex-1 py-3 rounded-full text-white font-semibold text-base"
           style={{ backgroundColor: `var(--color-${cat.color})` }}
         >
-          {running ? "Stop" : minutes > 0 ? "Resume" : "Start"}
+          {runningHere ? "Stop" : minutes > 0 ? "Resume" : "Start"}
         </button>
         <button
           type="button"
@@ -182,20 +199,30 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         </button>
       </div>
 
+      <PhotoAttachField photo={photo} onChange={setPhoto} />
+
       <SaveBar
         cat={cat}
         editing={editing}
-        onSave={() =>
+        onSave={() => {
+          const finalMin = runningHere ? timer.stop() : liveMinutes || 1;
           save({
-            durationMin: minutes || 1,
+            durationMin: finalMin,
             meta: showSide
-              ? `${formatDurationShort(minutes || 1)}, ${side}`
-              : formatDurationShort(minutes || 1),
-          })
-        }
+              ? `${formatDurationShort(finalMin)}, ${side}`
+              : formatDurationShort(finalMin),
+            photo,
+          });
+        }}
       />
     </div>
   );
+}
+
+function formatTimerLive(sec: number): string {
+  const m = Math.floor(sec / 60).toString().padStart(2, "0");
+  const s = (sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
 }
 
 function parseSide(meta?: string): "left" | "right" | "both" | null {
@@ -225,6 +252,7 @@ function MeasurementForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     parseLeadingNumber(editing?.meta) ??
     (cat.id === "weight-baby" ? 5.4 : cat.id === "length" ? 63 : cat.id === "head" ? 40 : 60.0);
   const [value, setValue] = useState<number>(initialValue);
+  const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
   const save = useSaveEntry(cat, editing);
 
   return (
@@ -258,7 +286,9 @@ function MeasurementForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         </div>
       )}
 
-      <SaveBar cat={cat} editing={editing} onSave={() => save({ meta: `${value} ${unit}` })} />
+      <PhotoAttachField photo={photo} onChange={setPhoto} />
+
+      <SaveBar cat={cat} editing={editing} onSave={() => save({ meta: `${value} ${unit}`, photo })} />
     </div>
   );
 }
@@ -279,6 +309,7 @@ function EventForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     if (!editing?.meta) return "";
     return presets.includes(editing.meta) ? "" : editing.meta;
   });
+  const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
   const save = useSaveEntry(cat, editing);
   const isMoodPicker = cat.id === "mom-mood";
 
@@ -327,10 +358,12 @@ function EventForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         />
       </Field>
 
+      <PhotoAttachField photo={photo} onChange={setPhoto} />
+
       <SaveBar
         cat={cat}
         editing={editing}
-        onSave={() => save({ meta: note.trim() || selected || cat.label })}
+        onSave={() => save({ meta: note.trim() || selected || cat.label, photo })}
       />
     </div>
   );
@@ -465,7 +498,9 @@ function NoteForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const isPicture = cat.id === "picture";
   const isQuote = cat.id === "quote";
   const [text, setText] = useState(editing?.meta ?? "");
+  const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
   const save = useSaveEntry(cat, editing);
+
   return (
     <div className="space-y-5">
       <Field label="When">
@@ -478,26 +513,71 @@ function NoteForm({ cat, editing }: { cat: Category; editing?: Entry }) {
       </Field>
 
       {isPicture ? (
-        <div className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-1.5 text-neutral-500 text-sm">
-          <Illustration name="camera" className="w-8 h-8 text-neutral-400" />
-          <span>Tap to add a photo</span>
-        </div>
+        <PhotoPickerSquare photo={photo} onChange={setPhoto} />
       ) : (
-        <Field label={isQuote ? "Quote" : "Note"}>
-          <textarea
-            rows={4}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
-            placeholder={isQuote ? "“Something they said today...”" : "What's on your mind?"}
-          />
-        </Field>
+        <>
+          <Field label={isQuote ? "Quote" : "Note"}>
+            <textarea
+              rows={4}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
+              placeholder={isQuote ? "“Something they said today...”" : "What's on your mind?"}
+            />
+          </Field>
+          <PhotoAttachField photo={photo} onChange={setPhoto} />
+        </>
       )}
 
       <SaveBar
         cat={cat}
         editing={editing}
-        onSave={() => save({ meta: text.trim() || cat.label, photo: editing?.photo })}
+        onSave={() => save({ meta: text.trim() || cat.label, photo })}
+      />
+    </div>
+  );
+}
+
+/** Large square photo picker for the dedicated Picture/Memory entry. */
+function PhotoPickerSquare({ photo, onChange }: { photo?: string; onChange: (p?: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="w-full aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-1.5 text-neutral-500 text-sm overflow-hidden active:scale-[0.99] transition"
+      >
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt="Selected" className="w-full h-full object-cover" />
+        ) : (
+          <>
+            <Illustration name="camera" className="w-8 h-8 text-neutral-400" />
+            <span>Tap to add a photo</span>
+          </>
+        )}
+      </button>
+      {photo && (
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          className="absolute top-2 right-2 px-2 py-1 rounded-full bg-white/90 text-xs font-semibold text-neutral-700 shadow-sm"
+        >
+          Remove
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) readFileAsDataUrl(f).then(onChange);
+          e.target.value = "";
+        }}
       />
     </div>
   );
@@ -514,6 +594,65 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </div>
   );
+}
+
+/**
+ * Optional photo attach affordance — compact dashed button when empty, thumbnail
+ * + Remove pill when filled. Reads the picked file as a data: URL so the prototype
+ * can persist photos in the in-memory journal store without a backend.
+ */
+function PhotoAttachField({ photo, onChange }: { photo?: string; onChange: (p?: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="space-y-2">
+      <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+        Photo (optional)
+      </div>
+      {photo ? (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo} alt="" className="w-full h-32 object-cover rounded-xl" />
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            className="absolute top-2 right-2 px-2 py-1 rounded-full bg-white/90 text-xs font-semibold text-neutral-700 shadow-sm"
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="w-full py-3 rounded-xl border-2 border-dashed border-neutral-200 text-sm text-neutral-500 font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition"
+        >
+          <Illustration name="camera" className="w-4 h-4" />
+          <span>Attach photo</span>
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) readFileAsDataUrl(f).then(onChange);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
+function readFileAsDataUrl(file: File): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : undefined);
+    reader.onerror = () => resolve(undefined);
+    reader.readAsDataURL(file);
+  });
 }
 
 function SaveBar({ cat, editing, onSave }: { cat: Category; editing?: Entry; onSave?: () => void }) {
