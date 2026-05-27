@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mali Asset Library</title>
+  <style>
+    :root {
+      --teal: #2c7a72;
+      --teal-soft: #c8ddd9;
+      --teal-softer: #e8f0ee;
+      --coral: #d97962;
+      --coral-soft: #f4d6cd;
+      --coral-softer: #faece5;
+      --ink: #1c1c1c;
+      --muted: #6b6b6b;
+      --bg: #faf6f1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      margin: 0;
+      padding: 32px 24px 80px;
+    }
+    h1 {
+      font-family: "Crimson Pro", Georgia, serif;
+      font-size: 38px;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+    .lead {
+      color: var(--muted);
+      margin: 0 0 32px;
+      max-width: 60ch;
+    }
+    h2 {
+      font-family: "Crimson Pro", Georgia, serif;
+      font-weight: 600;
+      font-size: 24px;
+      margin: 48px 0 4px;
+      border-top: 1px solid #e7e2d9;
+      padding-top: 32px;
+    }
+    h2 .count {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 400;
+      font-family: -apple-system, sans-serif;
+      margin-left: 10px;
+    }
+    .section-blurb {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 20px;
+    }
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    .grid.illustrations {
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+    .tile {
+      background: white;
+      border-radius: 14px;
+      padding: 14px 10px 10px;
+      text-align: center;
+      border: 1px solid #ece6dc;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .tile:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    }
+    .tile .preview {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      color: var(--ink);
+    }
+    .tile.illustration .preview {
+      height: 130px;
+      background: var(--coral-softer);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .tile.illustration .preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .tile svg {
+      width: 56px;
+      height: 56px;
+    }
+    .tile .name {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      color: var(--muted);
+      word-break: break-word;
+      line-height: 1.3;
+    }
+    .filter {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      padding: 12px 0;
+      margin: -32px -24px 24px;
+      padding: 16px 24px;
+      border-bottom: 1px solid #e7e2d9;
+      z-index: 10;
+    }
+    .filter input {
+      width: 100%;
+      max-width: 420px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #d5cebe;
+      background: white;
+      font-size: 14px;
+    }
+    .hidden { display: none !important; }
+    .empty {
+      color: var(--muted);
+      padding: 24px;
+      text-align: center;
+      grid-column: 1 / -1;
+    }
+    .swatch {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      vertical-align: middle;
+      margin-right: 6px;
+      border: 1px solid #ddd;
+    }
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Mali Asset Library</h1>
+  <p class="lead">
+    Every icon and illustration extracted from <code>Mali Pregnancy &amp; Parenting 2.9.4 APK</code>.
+    SVG icons inherit <code>currentColor</code> when used in the app; here they're rendered at <code>#222</code>.
+    PNG illustrations shown on coral background to mimic the in-app surface.
+  </p>
+
+  <div class="filter">
+    <input type="text" id="q" placeholder="Filter by name… (e.g. pregnant, kick, baby, growth)" />
+  </div>
+
+  <h2>SVG icons <span class="count" id="icon-count"></span></h2>
+  <p class="section-blurb">136 vector icons extracted from <code>res/drawable/*.xml</code>. Use via <code>&lt;Illustration name="<i>key</i>" /&gt;</code>.</p>
+  <div class="grid" id="icon-grid"></div>
+
+  <h2>PNG illustrations <span class="count" id="ill-count"></span></h2>
+  <p class="section-blurb">108 raster illustrations + animations from <code>res/drawable/</code>. Use via <code>&lt;Image src="/mali-library/illustrations/<i>name</i>.png" /&gt;</code> or copy to <code>public/</code>.</p>
+  <div class="grid illustrations" id="ill-grid"></div>
+
+  <script>
+    const ICONS = ["about-mali", "add-small", "all-list-icon", "arrow-back-black-24", "arrow-left", "arrow-right", "belly-gallery", "birth-certificate", "cake-menu", "calendar-button", "camera", "care-team", "chart", "check-circle", "checkmark", "chevron-down", "circle-one", "circle-three", "circle-two", "clear-black-24", "clock-black-24dp", "close", "community", "contraction", "contraction-counter", "contraction-counter-menu", "contraction-menu", "crawling", "crawling-01", "deal-menu", "delete-forever-small", "discuss", "discussion", "discussion-01", "due-date", "edit-profile", "edit-small", "email", "favorites", "favourites", "feed-contractions", "feed-due-date", "feed-header-care-team", "feed-header-community", "feed-header-contractions", "feed-header-due-date", "feed-header-guide", "feed-header-journal", "feed-header-kick-counter", "feed-header-mom-s-club", "feed-header-profile", "feed-header-to-do-lists", "feed-journal", "feed-kick", "feed-profile", "fetus", "fetus-01", "first-remaining-phase", "flag", "flag-fill", "growth-charts", "growth-head-circumference", "growth-height", "growth-weight", "guide", "head", "heart", "height", "important-list-icon", "info-circle", "journal", "keyboard-arrow-left-black", "keyboard-arrow-left-white", "keyboard-arrow-right", "keyboard-black-24dp", "kick", "kick-bare", "kick-counter", "kick-counter-feet-fill", "kick-counter-feet-stroke", "kick-counter-menu", "kick-menu", "kick-stroke", "line", "line-outline-navigation-01", "lock-white", "log-out", "m-logo", "mali-app-icon", "mali-logo", "mali-new-logo", "menu-due-date", "milestone", "milestone-navigation", "milesttones", "moms-club", "more", "my-feed", "my-weight", "navigation-icon-discussion", "newborn", "newborn-01", "notification", "other-sign-in", "outline-remove-24", "passkey", "password", "play-circle-fill", "privacy-policy", "profile", "profile-image-mock-up", "quote", "quote-symbol", "radio-button-unchecked", "rate-app", "report-birth", "save-favorite", "scale", "scheduled-list-icon", "search-black-24", "second-remaining-phase", "settings", "share", "share-small", "suggested", "suggested-01", "suggested-list-icon", "survey", "task-list-overview", "terms", "third-remaining-phase", "todo", "unsave-favorite", "weight", "weight-menu", "xmark-circle-fill"];
+
+    const ILLUSTRATIONS = [{"name":"add_illustration","ext":"png"}, {"name":"add_new_session","ext":"png"}, {"name":"baby_born","ext":"png"}, {"name":"baby_crawl","ext":"png"}, {"name":"baby_food_guide_icon","ext":"jpg"}, {"name":"baby_health_guide_icon","ext":"jpg"}, {"name":"baby_on_phone","ext":"png"}, {"name":"baby_pregnancy_select","ext":"png"}, {"name":"belly_heart_illustration","ext":"png"}, {"name":"breast_feeding_guide_icon","ext":"jpg"}, {"name":"childrens_day","ext":"png"}, {"name":"chinese_new_year","ext":"png"}, {"name":"christmas","ext":"png"}, {"name":"contraction_illustration","ext":"png"}, {"name":"crawling_load","ext":"gif"}, {"name":"default_baby_profile","ext":"jpeg"}, {"name":"devali","ext":"png"}, {"name":"doctor_thank_you","ext":"png"}, {"name":"dont_leave","ext":"png"}, {"name":"easter","ext":"png"}, {"name":"empty_graph","ext":"png"}, {"name":"empty_graph_pregnancy","ext":"png"}, {"name":"ey_growth_head_icon","ext":"png"}, {"name":"ey_growth_height_icon","ext":"png"}, {"name":"ey_growth_weight_icon","ext":"png"}, {"name":"family_picture_guide","ext":"png"}, {"name":"father_day","ext":"png"}, {"name":"feeding_your_baby_guide_icon","ext":"jpg"}, {"name":"first_aid_guide_icon","ext":"jpg"}, {"name":"flag_en","ext":"png"}, {"name":"flag_th","ext":"png"}, {"name":"flag_vi","ext":"png"}, {"name":"halloween","ext":"png"}, {"name":"happy_hands_up_baby","ext":"png"}, {"name":"happy_victory_baby","ext":"png"}, {"name":"kick_illustration","ext":"png"}, {"name":"kickcountcompletion","ext":"png"}, {"name":"loading_indicator_dots_outline","ext":"gif"}, {"name":"loading_indicator_dots_outline_small","ext":"gif"}, {"name":"loading_indicator_logo","ext":"gif"}, {"name":"loy_krathong","ext":"png"}, {"name":"maintenance","ext":"png"}, {"name":"mali_app_icon","ext":"png"}, {"name":"mali_ey_milestone_checked","ext":"png"}, {"name":"mali_logo","ext":"png"}, {"name":"mali_logo_small","ext":"png"}, {"name":"mascot_baby_profile","ext":"png"}, {"name":"mascot_i_am_here_for","ext":"gif"}, {"name":"mascot_notification","ext":"gif"}, {"name":"mascot_save_your_interests","ext":"gif"}, {"name":"mascot_signup_completed","ext":"gif"}, {"name":"mascot_welcome","ext":"gif"}, {"name":"mascot_who_are_you","ext":"gif"}, {"name":"mascot_your_baby","ext":"gif"}, {"name":"mascot_your_due_date","ext":"gif"}, {"name":"mascot_your_interest","ext":"gif"}, {"name":"mascot_your_weight","ext":"gif"}, {"name":"mother_day","ext":"png"}, {"name":"myweight_bmi_18_5_24_9","ext":"png"}, {"name":"myweight_bmi_25_29_9","ext":"png"}, {"name":"myweight_bmi_above_30","ext":"png"}, {"name":"myweight_bmi_below_18_5","ext":"png"}, {"name":"myweight_scale","ext":"png"}, {"name":"myweight_twins_bmi_18_22","ext":"png"}, {"name":"myweight_twins_bmi_23_30","ext":"png"}, {"name":"myweight_twins_bmi_above_30","ext":"png"}, {"name":"myweight_twins_bmi_below_18","ext":"png"}, {"name":"new_year","ext":"png"}, {"name":"no_connection_eng","ext":"gif"}, {"name":"no_connection_thai","ext":"gif"}, {"name":"note_illustration","ext":"png"}, {"name":"otp_phone","ext":"png"}, {"name":"pregnancy_food_guide_icon","ext":"jpg"}, {"name":"pregnancy_greeting_cover","ext":"png"}, {"name":"pregnancy_symptoms_guide_icon","ext":"jpg"}, {"name":"pregnant_1","ext":"png"}, {"name":"pregnant_10_after","ext":"png"}, {"name":"pregnant_1_after","ext":"png"}, {"name":"pregnant_2","ext":"png"}, {"name":"pregnant_2_after","ext":"png"}, {"name":"pregnant_3","ext":"png"}, {"name":"pregnant_3_after","ext":"png"}, {"name":"pregnant_4","ext":"png"}, {"name":"pregnant_4_after","ext":"png"}, {"name":"pregnant_5","ext":"png"}, {"name":"pregnant_5_after","ext":"png"}, {"name":"pregnant_6","ext":"png"}, {"name":"pregnant_6_after","ext":"png"}, {"name":"pregnant_7","ext":"png"}, {"name":"pregnant_7_after","ext":"png"}, {"name":"pregnant_8","ext":"png"}, {"name":"pregnant_8_after","ext":"png"}, {"name":"pregnant_9","ext":"png"}, {"name":"pregnant_9_after","ext":"png"}, {"name":"pregnant_loading","ext":"gif"}, {"name":"prenatal_visits_guide_icon","ext":"jpg"}, {"name":"pride","ext":"png"}, {"name":"quote_illustration","ext":"png"}, {"name":"report_birth_congratulations","ext":"gif"}, {"name":"report_birth_congratulations_th","ext":"gif"}, {"name":"signup_doctors","ext":"png"}, {"name":"signup_moms_1","ext":"png"}, {"name":"signup_moms_2","ext":"png"}, {"name":"songkran","ext":"png"}, {"name":"survey","ext":"png"}, {"name":"things_to_avoid_guide_icon","ext":"jpg"}, {"name":"valentines","ext":"png"}, {"name":"world_icon","ext":"png"}];
+
+    // Build icon grid
+    const iconGrid = document.getElementById("icon-grid");
+    ICONS.forEach(name => {
+      const tile = document.createElement("a");
+      tile.className = "tile icon";
+      tile.href = `icons/${name}.svg`;
+      tile.target = "_blank";
+      tile.dataset.name = name;
+      tile.innerHTML = `<div class="preview"></div><div class="name">${name}</div>`;
+      iconGrid.appendChild(tile);
+      // Load SVG inline
+      fetch(`icons/${name}.svg`).then(r => r.text()).then(svg => {
+        tile.querySelector(".preview").innerHTML = svg;
+      });
+    });
+    document.getElementById("icon-count").textContent = `(${ICONS.length})`;
+
+    // Build illustration grid
+    const illGrid = document.getElementById("ill-grid");
+    ILLUSTRATIONS.forEach(item => {
+      const name = item.name;
+      const ext = item.ext;
+      const tile = document.createElement("a");
+      tile.className = "tile illustration";
+      tile.href = `illustrations/${name}.${ext}`;
+      tile.target = "_blank";
+      tile.dataset.name = name;
+      tile.innerHTML = `<div class="preview"><img src="illustrations/${name}.${ext}" onerror="this.parentElement.innerHTML='<span style=color:#aaa;font-size:11px>missing</span>';" /></div><div class="name">${name}${ext === 'gif' ? ' <span style=color:#d97962;font-weight:600>GIF</span>' : ''}</div>`;
+      illGrid.appendChild(tile);
+    });
+    document.getElementById("ill-count").textContent = `(${ILLUSTRATIONS.length})`;
+
+    // Filter
+    const q = document.getElementById("q");
+    q.addEventListener("input", () => {
+      const term = q.value.trim().toLowerCase();
+      document.querySelectorAll(".tile").forEach(t => {
+        const match = !term || t.dataset.name.toLowerCase().includes(term);
+        t.classList.toggle("hidden", !match);
+      });
+    });
+  </script>
+
+</body>
+</html>

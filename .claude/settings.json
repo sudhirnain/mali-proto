@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s *)",
+      "Bash(curl -i *)",
+      "Bash(curl -sI *)",
+      "Bash(mkdir -p *)",
+      "Bash(unzip -l *)",
+      "Bash(pdfimages -list *)",
+      "Bash(/usr/bin/git diff *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "mcp__Claude_in_Chrome__read_page"
+    ]
+  }
+}

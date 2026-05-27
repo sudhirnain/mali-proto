@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Mali source materials (reference only — 131MB of XAPK, video, deck, screenshots)
+# Kept locally for re-extraction or design reference. Not committed.
+/mali-source/
+
+# Personal Claude Code permission grants — per-developer, not shared.
+.claude/settings.local.json
