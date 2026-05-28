@@ -9,6 +9,14 @@ import { useEntries } from "@/lib/journal-store";
 import { Illustration } from "./Illustration";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function parseEuDate(s: string | undefined): Date | null {
+  if (!s) return null;
+  const m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (!m) return null;
+  return new Date(`${m[3]}-${m[2]}-${m[1]}T12:00:00`);
+}
 
 /**
  * Top stats row of the header.
@@ -94,6 +102,14 @@ function PregnancyStatStrip() {
   // missing for that week.
   const weekArt = `/mali-art/weekly/w${week}.png`;
 
+  // Days remaining until the due date. Used by the right progress-ring stat.
+  // Falls back to a week-based estimate if dueDate is unparseable.
+  const daysToDue = useMemo(() => {
+    const due = parseEuDate(dueDate);
+    if (!due) return Math.max(0, (40 - week) * 7);
+    return Math.max(0, Math.ceil((due.getTime() - Date.now()) / DAY_MS));
+  }, [dueDate, week]);
+
   return (
     <div className="px-4 pt-2 pb-3">
       <div className="grid grid-cols-[80px_1fr_80px] items-end gap-2">
@@ -114,17 +130,15 @@ function PregnancyStatStrip() {
           subline={baby.ageLabel}
         />
 
-        {/* Right — due date as primary surface, baby weight estimate as caption
-         *  below. Tap opens the change-due-date sheet. Per A5b/A5c: baby weight
-         *  is backend-sourced and NOT user-editable, surfaced via "(est. ...)" */}
-        <SideStat
-          buttonAria="Due date"
-          buttonIcon={<Illustration name="heart" className="w-6 h-6" />}
-          value={dueDate}
-          caption="Due date"
-          subCaption={baby.weight ? `est. baby ${baby.weight}` : undefined}
+        {/* Right — progress ring + days countdown. Slide 4 said "countdown
+         *  OR baby weight"; we picked countdown. The ring fills as % through
+         *  pregnancy (week / 40); the big number is days until due. Tap
+         *  opens the change-due-date sheet (per A5b). Baby weight is
+         *  backend-sourced and lives off the header now. */}
+        <ProgressRingStat
+          days={daysToDue}
+          pct={Math.min(100, Math.round((week / 40) * 100))}
           onTap={() => setEditingDueDate(true)}
-          valueFontClass="tabular-nums text-[11px]"
         />
       </div>
 
@@ -181,26 +195,18 @@ function SideStat({
   buttonIcon,
   value,
   caption,
-  subCaption,
   href,
   emptyCta,
-  onTap,
   dueDot,
-  valueFontClass,
 }: {
   buttonAria: string;
   buttonIcon: React.ReactNode;
   value: string | null;
   caption: string;
-  subCaption?: string;
   href?: string;
   emptyCta?: { href: string; label: string };
-  /** When provided, the whole stat becomes a button calling onTap instead of a Link. */
-  onTap?: () => void;
   /** Renders a small red dot in the top-right of the icon ring. */
   dueDot?: boolean;
-  /** Override for the value's typography (e.g. tabular-nums for a date). */
-  valueFontClass?: string;
 }) {
   const ringClass = "border border-[var(--color-primary)]/40";
 
@@ -224,15 +230,10 @@ function SideStat({
       </div>
       {value ? (
         <>
-          <div className={`font-semibold text-neutral-900 leading-tight mt-1 ${valueFontClass ?? "text-xs tabular-nums"}`}>
+          <div className="text-xs font-semibold text-neutral-900 leading-tight mt-1 tabular-nums">
             {value}
           </div>
           <div className="text-xs text-neutral-700 -mt-0.5">{caption}</div>
-          {subCaption && (
-            <div className="text-[10px] text-neutral-500 leading-tight -mt-0.5">
-              {subCaption}
-            </div>
-          )}
         </>
       ) : emptyCta ? (
         <div className="text-[11px] font-semibold text-[var(--color-primary-dark)] mt-1 underline decoration-dotted underline-offset-2 text-center leading-tight">
@@ -247,13 +248,6 @@ function SideStat({
   const wrapperClass =
     "flex flex-col items-center gap-1 min-h-[84px] active:scale-[0.98] transition";
 
-  if (onTap) {
-    return (
-      <button onClick={onTap} className={wrapperClass} type="button">
-        {body}
-      </button>
-    );
-  }
   if (linkHref) {
     return (
       <Link href={linkHref} className={wrapperClass}>
@@ -262,6 +256,78 @@ function SideStat({
     );
   }
   return <div className={wrapperClass}>{body}</div>;
+}
+
+/**
+ * Right side-stat for pregnancy: progress ring with days-countdown.
+ * Slide 4 spec: "Change to countdown or baby weight" — we picked countdown.
+ * The ring fills as % through pregnancy; the big number is days remaining.
+ * Tap opens the DueDateSheet (the only edit affordance — baby weight is
+ * backend-sourced).
+ */
+function ProgressRingStat({
+  days,
+  pct,
+  onTap,
+}: {
+  days: number;
+  pct: number;
+  onTap: () => void;
+}) {
+  const SIZE = 48;
+  const STROKE = 4;
+  const R = (SIZE - STROKE) / 2;
+  const C = 2 * Math.PI * R;
+  const offset = C * (1 - Math.max(0, Math.min(100, pct)) / 100);
+
+  return (
+    <button
+      type="button"
+      onClick={onTap}
+      className="flex flex-col items-center gap-1 min-h-[84px] active:scale-[0.98] transition"
+      aria-label="Change due date"
+    >
+      <div className="relative w-12 h-12">
+        <svg
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          className="w-full h-full -rotate-90"
+          aria-hidden
+        >
+          {/* track */}
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={R}
+            stroke="var(--color-primary)"
+            strokeOpacity={0.2}
+            strokeWidth={STROKE}
+            fill="none"
+          />
+          {/* progress */}
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={R}
+            stroke="var(--color-primary)"
+            strokeWidth={STROKE}
+            fill="none"
+            strokeDasharray={C}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+          <span className="text-[15px] font-semibold text-neutral-900 tabular-nums">
+            {days}
+          </span>
+        </div>
+      </div>
+      <div className="text-xs font-semibold text-neutral-900 leading-tight mt-1">
+        {days === 1 ? "day" : "days"}
+      </div>
+      <div className="text-xs text-neutral-700 -mt-0.5">til birth</div>
+    </button>
+  );
 }
 
 /**
