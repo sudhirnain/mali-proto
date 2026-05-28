@@ -9,6 +9,7 @@ import { formatTime } from "@/lib/format";
 import { MOCK_KICK_SESSIONS, MOCK_CONTRACTIONS, TODAY_DATE, type Entry } from "@/lib/mock-entries";
 import { useJournalStore } from "@/lib/journal-store";
 import { useActiveTimer } from "@/lib/active-timer";
+import { tinyHaptic } from "@/lib/haptic";
 
 export default function LogEntryPage() {
   const params = useParams<{ category: string }>();
@@ -348,13 +349,14 @@ function EventForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         </Field>
       ) : null}
 
-      <Field label="Note (optional)">
+      <Field label={selected === OTHER_PRESET ? "Describe" : "Note (optional)"}>
         <textarea
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
-          placeholder="Anything else?"
+          placeholder={selected === OTHER_PRESET ? "What was it?" : "Anything else?"}
+          autoFocus={selected === OTHER_PRESET && !note}
         />
       </Field>
 
@@ -363,7 +365,17 @@ function EventForm({ cat, editing }: { cat: Category; editing?: Entry }) {
       <SaveBar
         cat={cat}
         editing={editing}
-        onSave={() => save({ meta: note.trim() || selected || cat.label, photo })}
+        onSave={() =>
+          save({
+            // If "Other" is the chip, the note IS the entry. For other chips,
+            // a free-text note still overrides the chip label (existing behavior).
+            meta:
+              selected === OTHER_PRESET
+                ? note.trim() || OTHER_PRESET
+                : note.trim() || selected || cat.label,
+            photo,
+          })
+        }
       />
     </div>
   );
@@ -384,6 +396,7 @@ function MomMoodPicker({
     { id: "Anxious", emoji: "😟" },
     { id: "Overwhelmed", emoji: "😩" },
     { id: "Grateful", emoji: "🙏" },
+    { id: OTHER_PRESET, emoji: "💭" },
   ];
   return (
     <Field label="How are you?">
@@ -424,7 +437,10 @@ function KicksForm({ cat }: { cat: Category }) {
       </div>
 
       <button
-        onClick={() => setCount((c) => Math.min(c + 1, goal))}
+        onClick={() => {
+          tinyHaptic();
+          setCount((c) => Math.min(c + 1, goal));
+        }}
         className="w-32 h-32 mx-auto rounded-full text-white font-semibold text-base shadow-lg active:scale-95 transition"
         style={{ backgroundColor: "var(--color-cat-kicks)" }}
       >
@@ -468,6 +484,7 @@ function ContractionsForm({ cat }: { cat: Category }) {
 
       <button
         onClick={() => {
+          tinyHaptic();
           setRunning((r) => !r);
           setLogged((n) => n + 1);
         }}
@@ -685,22 +702,27 @@ function DoneBar({ onDone }: { onDone: () => void }) {
   );
 }
 
+// Sentinel value for the "Other" preset chip on every picker. When selected,
+// the Note field becomes the freeform entry. Per slide 16 comment: "Always
+// allow to 'Other'".
+export const OTHER_PRESET = "Other";
+
 function presetsFor(id: string): string[] {
   switch (id) {
     case "diaper":
-      return ["Wet", "Dirty", "Mixed", "Dry"];
+      return ["Wet", "Dirty", "Mixed", "Clean", OTHER_PRESET];
     case "solids":
-      return ["Veg", "Fruit", "Grain", "Protein", "Dairy"];
+      return ["Veg", "Fruit", "Grain", "Protein", "Dairy", OTHER_PRESET];
     case "doctor":
-      return ["Checkup", "Sick visit", "Specialist"];
+      return ["Checkup", "Sick visit", "Specialist", OTHER_PRESET];
     case "vaccinations":
-      return ["DTP", "Hep B", "MMR", "Flu"];
+      return ["DTP", "Hep B", "MMR", "Flu", OTHER_PRESET];
     case "temperature":
       return [];
     case "illnesses":
-      return ["Fever", "Cough", "Cold", "Rash"];
+      return ["Fever", "Cough", "Cold", "Rash", OTHER_PRESET];
     case "medications":
-      return ["Paracetamol", "Ibuprofen", "Vitamin D"];
+      return ["Paracetamol", "Ibuprofen", "Vitamin D", OTHER_PRESET];
     case "cheerful":
     case "fine":
     case "sad":
@@ -709,11 +731,11 @@ function presetsFor(id: string): string[] {
 
     // Pregnancy mom-experience presets
     case "mom-mood":
-      return ["Cheerful", "Fine", "Anxious", "Overwhelmed", "Grateful"];
+      return ["Cheerful", "Fine", "Anxious", "Overwhelmed", "Grateful", OTHER_PRESET];
     case "symptoms":
-      return ["Nausea", "Headache", "Swelling", "Heartburn", "Fatigue", "Back pain", "Cramping"];
+      return ["Nausea", "Headache", "Swelling", "Heartburn", "Fatigue", "Back pain", "Cramping", OTHER_PRESET];
     case "hydration":
-      return ["Cup (250ml)", "Glass (350ml)", "Bottle (500ml)", "Large (1L)"];
+      return ["Cup (250ml)", "Glass (350ml)", "Bottle (500ml)", "Large (1L)", OTHER_PRESET];
 
     default:
       return [];

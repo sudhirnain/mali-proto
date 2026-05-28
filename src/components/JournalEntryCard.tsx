@@ -85,6 +85,14 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
   );
 }
 
+function PhotoThumb({ src }: { src: string }) {
+  return (
+    <div className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 bg-neutral-100">
+      <Image src={src} alt="" fill sizes="36px" className="object-cover" />
+    </div>
+  );
+}
+
 function CareRow({ entry, cat }: { entry: Entry; cat: Category }) {
   return (
     <Link
@@ -111,6 +119,7 @@ function CareRow({ entry, cat }: { entry: Entry; cat: Category }) {
           </span>
         )}
       </div>
+      {entry.photo && <PhotoThumb src={entry.photo} />}
       <span className="text-[11px] text-neutral-400 tabular-nums shrink-0 leading-tight">
         {formatTime(entry.at)}
       </span>
@@ -142,6 +151,7 @@ function MeasurementRow({ entry, cat }: { entry: Entry; cat: Category }) {
           {cat.label}
         </span>
       </div>
+      {entry.photo && <PhotoThumb src={entry.photo} />}
       <span className="text-[11px] text-neutral-400 tabular-nums shrink-0 leading-tight">
         {formatTime(entry.at)}
       </span>

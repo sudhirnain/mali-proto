@@ -6,7 +6,7 @@ For project conventions read [CLAUDE.md](CLAUDE.md) first. For the screen-by-scr
 
 ## TL;DR
 
-Pregnancy header is compact. Photo attach is on most entry forms. Sticky timer chip works across navigation. Deployed to `mali-proto.vercel.app` but **deployment protection is still blocking anonymous viewers** (401). The May-28 review deck arrived and has been fully reconciled into [SPEC.md](SPEC.md); ~15 new build items are queued there.
+Pregnancy header is compact. Photo attach is on most entry forms. Sticky timer chip works across navigation. Deployed to `mali-proto.vercel.app` — **deployment protection being lifted today** (Sudhir is flipping it in the dashboard). The May-28 review deck arrived and has been fully reconciled into [SPEC.md](SPEC.md); ~17 new build items are queued. A follow-up Jonas email on 2026-05-28 evening **re-opened the pink-only decision** as an opinion question (drafted reply, awaiting Sudhir to send) and **confirmed custom milestones as BUILD** (date / image / title / notes → checkbox in overview).
 
 ## What's shipped (✅)
 
@@ -24,8 +24,8 @@ Commits on `main`, deployed to https://mali-proto.vercel.app (private under team
 
 1. **Vercel Deployment Protection = 401** at https://mali-proto.vercel.app. Until this flips, Jonas can't see the live build. Fix path:
    - Vercel Dashboard → mali-proto → Settings → Deployment Protection → set to **Disabled** (or *Only Preview Deployments*)
-2. **Pink-only color** confirmed by deck slide 54 — but not yet implemented. Removing the teal/coral phase split touches `globals.css` + `BirthHandoff`. **No design pushback needed; just build.**
-3. **Mom-track in parenting visual** — biggest open design question (see SPEC.md A2). Needs Sudhir's call: pill, colored row bg, side strip, or "For mom" subsection? **Blocks** rebuilding the parenting feed.
+2. **Pink-only color (A1)** — RE-OPENED by Jonas's follow-up email as an opinion question. Reply drafted; Sudhir needs to send + wait for Jonas's read on the accent sub-question. **Blocks** removing the teal/coral phase split, BirthHandoff gradient swap, and Mom-track visual treatment (A2).
+3. **Mom-track in parenting visual** — biggest open design question (see SPEC.md A2). Blocked on A1 outcome. Pill, colored row bg, side strip, or "For mom" subsection?
 4. **Solids/Vaccinations/etc. forms** — DECIDE chips vs free-text vs both with "Other" — see SPEC.md Part C.
 5. **Sponsor/Cryoviva slot** (slide 55) — yes or no for the prototype.
 
@@ -35,7 +35,8 @@ All from [SPEC.md](SPEC.md) Part A. Roughly in dependency order:
 
 | # | Item | Files | Size |
 |---|---|---|---|
-| A1 | Drop teal/coral phase split; pink everywhere | [globals.css](src/app/globals.css), [BirthHandoff.tsx](src/components/BirthHandoff.tsx) | 1h |
+| A1 | ~~Drop teal/coral phase split; pink everywhere~~ — **BLOCKED** on Jonas confirm; see reply draft | [globals.css](src/app/globals.css), [BirthHandoff.tsx](src/components/BirthHandoff.tsx) | 1h |
+| NEW | Custom milestones: + → date / image / title / notes → tile with checkbox in overview | [journal/category/milestone/page.tsx](src/app/(prototype)/journal/category/milestone/page.tsx), [journal-store.tsx](src/lib/journal-store.tsx) | 1-2h |
 | A5a–b | Center subline format + right ring = due date (tappable to edit) | [StatStrip.tsx](src/components/StatStrip.tsx) | 1h |
 | A5d | Per-week watercolor in StatStrip center (parenting fallback = line-art baby unless user-photo) | [StatStrip.tsx](src/components/StatStrip.tsx) | 1h |
 | A5f | Replace "1" numeric badge in pregnancy with `due` red dot; keep numeric in parenting | [FeedHeader.tsx](src/components/FeedHeader.tsx) | 30m |

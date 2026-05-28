@@ -136,15 +136,6 @@ export function DemoNavigator({ compact = false }: { compact?: boolean }) {
             }}
           />
           <TryThis
-            label="Browse the trimester archive"
-            sub="Pregnancy · T3 chapter view"
-            onClick={() => {
-              setPhase("pregnancy");
-              setCold(false);
-              router.push("/journal/trimester/t3");
-            }}
-          />
-          <TryThis
             label="See the cold-start experience"
             sub="Empty state · any phase"
             onClick={() => {

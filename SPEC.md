@@ -26,15 +26,18 @@ These touch many screens. Pin them first so per-screen specs stay short.
 
 ### A1. Color: drop the teal/coral phase split → pink everywhere
 
-**BUILD.** Slide 54 says verbatim *"Make Parenting also Pink."* Combined with the email line *"changing the app color to be pink only"*, this is decided. Implications:
+**DECIDE.** Status changed 2026-05-28 evening: Jonas re-opened this as an opinion question in a follow-up email — *"what do you think about changing the app color to be pink only? … It's more of a branding question, but I thought I'd ask for your opinion."* Slide 54's earlier *"Make Parenting also Pink"* annotation now reads as Jonas's leaning, not a locked call. Awaiting Sudhir's reply (in draft).
+
+If/when it locks to BUILD, the implications are:
 
 - `--color-primary` and family stop swapping on `[data-phase="parenting"]`. Both phases use the coral/salmon palette currently used for pregnancy.
 - Category colors (sleep purple, nursing green, diaper amber, etc.) stay as-is — they're tied to category, not phase.
 - The phase distinction now has to come from elsewhere — **content** (different StatStrip subject, different quick-logs, MilestoneHero vs JourneyHero), not chrome color.
 - `BirthHandoff` overlay: currently coral→teal gradient. Change to a coral→deeper-coral or coral→cream gradient so the "chapter change" still reads visually without invoking teal.
 - Mom-tracking-in-parenting (A2 below) is the place where we still need a *secondary* visual cue — so don't waste pink on every Mom row; reserve a paler tint or a "Mom" chip.
+- Open sub-question (raised in our reply to Jonas): if pink-only, do we add a secondary accent (soft sage / baby-blue) on Mom-tracking rows in parenting to keep some chromatic variety? Answer changes scope from 1-day swap to 3-day rethink.
 
-Files to touch: [globals.css](src/app/globals.css), [MobileFrame.tsx](src/components/MobileFrame.tsx) (BirthHandoff gradient), all components that branch on `data-phase` for color (none should after this).
+Files to touch when unblocked: [globals.css](src/app/globals.css), [MobileFrame.tsx](src/components/MobileFrame.tsx) (BirthHandoff gradient), all components that branch on `data-phase` for color (none should after this).
 
 ### A2. Mom vs Baby visual track in Parenting
 
@@ -499,7 +502,22 @@ A13 — add Other.
 `g3e401859f3b_1_173`. Mali milestone browser ("< Milestones / 2 of 17 reached / 12% through Lu's 0-12 month milestones / Up next: Pays attention to faces →") with filter chips (All / Cognitive / Language / Emotional / So...) and a 3×N grid of milestone tiles (Smiles spontaneously [done], Sucks on hands, Looks at you, Pays attention to faces, Becomes bored, Holds head up [done], etc.). FAB. Right side: My Baby reference with similar grid + "Coos and gurgles" cloud illustration + "P Add" big button.
 
 Comment (1):
-- 2026-05-25 02:13 — *"Can create users their own?"* (custom milestones — "first time daddy", "first time grandmother". From transcript: Jonas will *"check this afternoon"* re importance. **DECIDE.**)
+- 2026-05-25 02:13 — *"Can create users their own?"* (custom milestones — "first time daddy", "first time grandmother".)
+
+**BUILD — confirmed by Jonas follow-up email 2026-05-28:**
+
+> *"Lets keep it. Once users click add (+), they should be able to add a date, image, title and notes. That's it. It then appears with a checkbox in the overview."*
+
+Spec:
+- The `+` FAB on `/journal/category/milestone` opens an add-custom-milestone form.
+- Form fields: **Date** (defaults to today), **Image** (optional, via `PhotoAttachField`), **Title** (required, short text), **Notes** (optional, multiline).
+- On save: create a custom milestone tile in the overview grid. Visually identical to preset tiles but checkbox **already checked** (the act of adding it = marking it done — Jonas's framing is "users click + to record a milestone they reached," not "users define a milestone to chase").
+- Stored alongside presets in the milestone store. Extends the existing `setMilestoneDone(id, label, when, extra?)` flow; custom milestones get a generated id like `custom:<timestamp>` and a `label` matching the user's title.
+- Threads back into the journal as a `milestone:custom:<id>` entry, same path preset milestones already take.
+- No category filter chip change — custom milestones aggregate under an implicit "All" or a new "Yours" / "Custom" chip.
+- **DECIDE micro-question:** add a "Custom" filter chip to the milestone browser, or fold custom into "All" only? Lean: "All" only — fewer chips, less complexity.
+
+Files to touch: [src/lib/journal-store.tsx](src/lib/journal-store.tsx) (extend milestone store for custom entries), [src/app/(prototype)/journal/category/milestone/page.tsx](src/app/(prototype)/journal/category/milestone/page.tsx) (FAB → form), possibly a new sheet/page route.
 
 ### Slide 49 — MILESTONES (detail)
 
@@ -570,9 +588,10 @@ Annotation arrow → quote card → *"Nice idea!"* — Jonas approves the inline
 
 ## Part C — Open questions for next Jonas check
 
-- **Custom milestones** — does Mali data show enough users adding their own that it's worth the form? (Jonas: *"I'll check this afternoon"* on 2026-05-28; transcript line 207.)
+- **Pink-only color (A1)** — Jonas re-opened in follow-up email 2026-05-28 as an opinion question. Sudhir's reply drafted (leaning yes, asking about secondary accent for Mom-tracking rows in parenting). Awaiting Jonas's read on the accent sub-question.
+- ~~**Custom milestones**~~ — **RESOLVED 2026-05-28** by Jonas email: keep. Form = date / image / title / notes; appears with checkbox in overview. See slide 48 entry above.
 - **Sponsor / Cryoviva placement** (A15) — Sudhir's call on whether to mock.
-- **Mom-track visual** in parenting (A2) — pill label vs colored row vs side strip. Needs design alignment.
+- **Mom-track visual** in parenting (A2) — pill label vs colored row vs side strip. Blocked on A1 outcome.
 - **Solids: chips vs free-text** (slide 35) — pick one.
 - **Vaccinations: short chip list + Other vs longer list** (slide 42) — confirm.
 - **Mom-weight graph in parenting**: extend the pregnancy chart, or use a tab pattern? (slide 13 comment, A2.)

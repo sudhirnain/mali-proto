@@ -361,19 +361,27 @@ function PatternSection({ cat, entries }: { cat: Category; entries: Entry[] }) {
 /*  Chart section — decorative for the prototype                      */
 /* ------------------------------------------------------------------ */
 
+// Per slide 17/18 + transcript: kicks/contractions are counts, not continuous
+// signals — render as dots over "Last 7 days", not a line. Sleep is the same
+// short-period story. Growth metrics (weight/length/head) keep the line + 12-week
+// trend with the reference band.
+const DOTS_CATEGORIES = new Set(["kicks", "contractions", "sleep"]);
+
 function ChartSection({ cat }: { cat: Category }) {
-  // Simple SVG line chart with a light-green "ideal" band.
-  // Coordinates are hand-tuned for a believable trend.
   const w = 320;
   const h = 140;
   const padX = 16;
   const padY = 18;
 
-  // Sample points (12 weeks of trend)
-  const points: [number, number][] = [
-    [0, 0.30], [1, 0.34], [2, 0.39], [3, 0.43], [4, 0.49], [5, 0.55],
-    [6, 0.60], [7, 0.66], [8, 0.71], [9, 0.76], [10, 0.81], [11, 0.86],
-  ];
+  const isDots = DOTS_CATEGORIES.has(cat.id);
+
+  // Sample points: growth = 12 smooth weeks; dots = 7 daily dots with realistic variance
+  const points: [number, number][] = isDots
+    ? [[0, 0.42], [1, 0.31], [2, 0.55], [3, 0.48], [4, 0.62], [5, 0.40], [6, 0.71]]
+    : [
+        [0, 0.30], [1, 0.34], [2, 0.39], [3, 0.43], [4, 0.49], [5, 0.55],
+        [6, 0.60], [7, 0.66], [8, 0.71], [9, 0.76], [10, 0.81], [11, 0.86],
+      ];
   const N = points.length - 1;
   const sx = (i: number) => padX + (i / N) * (w - padX * 2);
   const sy = (v: number) => h - padY - v * (h - padY * 2);
@@ -384,7 +392,17 @@ function ChartSection({ cat }: { cat: Category }) {
   const lastIdx = points.length - 1;
   const [lx, lv] = points[lastIdx];
 
-  const unit = cat.id === "head" || cat.id === "length" ? "cm" : cat.id === "kicks" ? "kicks" : "kg";
+  const unit =
+    cat.id === "head" || cat.id === "length"
+      ? "cm"
+      : cat.id === "kicks"
+        ? "kicks"
+        : cat.id === "contractions"
+          ? "contractions"
+          : cat.id === "sleep"
+            ? "hours"
+            : "kg";
+  const periodLabel = isDots ? "Last 7 days" : "Last 12 weeks";
 
   return (
     <div className="px-4 pt-5">
@@ -393,18 +411,20 @@ function ChartSection({ cat }: { cat: Category }) {
           <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
             Trend
           </div>
-          <div className="text-xs text-neutral-500">Last 12 weeks · {unit}</div>
+          <div className="text-xs text-neutral-500">{periodLabel} · {unit}</div>
         </div>
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto" preserveAspectRatio="none">
-          {/* ideal band */}
-          <rect
-            x={padX}
-            y={sy(0.85)}
-            width={w - padX * 2}
-            height={sy(0.25) - sy(0.85)}
-            fill="var(--color-cat-food-soft)"
-            opacity={0.55}
-          />
+          {/* ideal band — only for growth metrics with a real reference range */}
+          {!isDots && (
+            <rect
+              x={padX}
+              y={sy(0.85)}
+              width={w - padX * 2}
+              height={sy(0.25) - sy(0.85)}
+              fill="var(--color-cat-food-soft)"
+              opacity={0.55}
+            />
+          )}
           {/* baseline */}
           <line
             x1={padX}
@@ -416,32 +436,50 @@ function ChartSection({ cat }: { cat: Category }) {
             strokeWidth={1}
             opacity={0.4}
           />
-          {/* trend line */}
-          <path
-            d={path}
-            fill="none"
-            stroke={`var(--color-${cat.color})`}
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {/* now marker */}
-          <line
-            x1={sx(lx)}
-            y1={padY}
-            x2={sx(lx)}
-            y2={h - padY}
-            stroke="var(--color-neutral-300)"
-            strokeWidth={1}
-          />
-          <circle
-            cx={sx(lx)}
-            cy={sy(lv)}
-            r={5}
-            fill={`var(--color-${cat.color})`}
-            stroke="white"
-            strokeWidth={2}
-          />
+          {isDots ? (
+            // Dots only — no connecting line. Kicks/contractions are counts,
+            // not a continuous signal (transcript: "It's a count and it
+            // doesn't need any [line]").
+            points.map(([i, v], idx) => (
+              <circle
+                key={idx}
+                cx={sx(i)}
+                cy={sy(v)}
+                r={4}
+                fill={`var(--color-${cat.color})`}
+                opacity={idx === lastIdx ? 1 : 0.75}
+              />
+            ))
+          ) : (
+            <>
+              {/* trend line */}
+              <path
+                d={path}
+                fill="none"
+                stroke={`var(--color-${cat.color})`}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* now marker */}
+              <line
+                x1={sx(lx)}
+                y1={padY}
+                x2={sx(lx)}
+                y2={h - padY}
+                stroke="var(--color-neutral-300)"
+                strokeWidth={1}
+              />
+              <circle
+                cx={sx(lx)}
+                cy={sy(lv)}
+                r={5}
+                fill={`var(--color-${cat.color})`}
+                stroke="white"
+                strokeWidth={2}
+              />
+            </>
+          )}
         </svg>
         <p className="text-sm text-neutral-700 leading-relaxed mt-3">
           Lu is{" "}

@@ -7,12 +7,6 @@ import { TODAY_DATE, type Entry } from "@/lib/mock-entries";
 import { CATEGORIES, categoriesForPhase } from "@/lib/categories";
 import { usePhase } from "@/lib/phase";
 import { useBaby } from "@/lib/cold-mode";
-import {
-  getTrimester,
-  trimesterFromWeek,
-  weekOfEntry,
-  type TrimesterId,
-} from "@/lib/trimester";
 import { useEntries } from "@/lib/journal-store";
 import { JournalEntryCard } from "@/components/JournalEntryCard";
 import { EmptyState } from "@/components/EmptyState";
@@ -112,7 +106,6 @@ function TabLink({ href, label, active }: { href: string; label: string; active:
 function TimeView() {
   const { phase } = usePhase();
   const entries = useEntries();
-  const baby = useBaby();
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const phaseCategoryIds = useMemo(
@@ -135,23 +128,6 @@ function TimeView() {
   }, [phaseCategoryIds, selected, entries]);
 
   const byDay = useMemo(() => groupByDay(filtered), [filtered]);
-
-  // Pregnancy phase: wrap day groups in trimester chapters. Each day's
-  // trimester is computed from its first entry's estimated gestational week.
-  const isPregnancy = phase === "pregnancy";
-  const currentWeek = baby.week ?? 24;
-  const byTrimester = useMemo<[TrimesterId, [string, Entry[]][]][]>(() => {
-    if (!isPregnancy) return [];
-    const map = new Map<TrimesterId, [string, Entry[]][]>();
-    for (const [dayKey, dayEntries] of byDay) {
-      if (dayEntries.length === 0) continue;
-      const t = trimesterFromWeek(weekOfEntry(dayEntries[0].at, currentWeek));
-      if (!map.has(t)) map.set(t, []);
-      map.get(t)!.push([dayKey, dayEntries]);
-    }
-    const order: Record<TrimesterId, number> = { t3: 3, t2: 2, t1: 1 };
-    return Array.from(map.entries()).sort((a, b) => order[b[0]] - order[a[0]]);
-  }, [byDay, isPregnancy, currentWeek]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -248,19 +224,9 @@ function TimeView() {
           />
         )}
 
-        {/* Pregnancy: chapter-style trimester groupings. Parenting: flat day list. */}
-        {isPregnancy
-          ? byTrimester.map(([t, days]) => (
-              <div key={t}>
-                <TrimesterHeader t={t} currentWeek={currentWeek} />
-                {days.map(([dayKey, dayEntries]) => (
-                  <DayBucket key={dayKey} dayKey={dayKey} dayEntries={dayEntries} />
-                ))}
-              </div>
-            ))
-          : byDay.map(([dayKey, dayEntries]) => (
-              <DayBucket key={dayKey} dayKey={dayKey} dayEntries={dayEntries} />
-            ))}
+        {byDay.map(([dayKey, dayEntries]) => (
+          <DayBucket key={dayKey} dayKey={dayKey} dayEntries={dayEntries} />
+        ))}
       </div>
     </>
   );
@@ -317,41 +283,6 @@ function DayBucket({ dayKey, dayEntries }: { dayKey: string; dayEntries: Entry[]
         ))}
       </div>
     </section>
-  );
-}
-
-/**
- * Trimester chapter divider in the pregnancy timeline. Tapping opens the
- * Trimester Archive (curated chapter view of the same entries).
- */
-function TrimesterHeader({ t, currentWeek }: { t: TrimesterId; currentWeek: number }) {
-  const tri = getTrimester(t);
-  const isCurrent = trimesterFromWeek(currentWeek) === t;
-  return (
-    <div className="px-5 mt-8 first:mt-6">
-      <Link
-        href={`/journal/trimester/${t}`}
-        className="flex items-baseline justify-between gap-2 active:opacity-70 transition"
-      >
-        <div>
-          <div className="text-[10.5px] uppercase tracking-[0.1em] font-bold text-[var(--color-primary-dark)]">
-            {tri.label}
-          </div>
-          <div className="serif text-[15px] font-semibold text-neutral-700 leading-tight mt-0.5">
-            Weeks {tri.weekStart}–{tri.weekEnd}
-            {isCurrent && (
-              <span className="ml-2 text-[10.5px] uppercase tracking-wider font-bold text-[var(--color-primary)]">
-                · you are here
-              </span>
-            )}
-          </div>
-        </div>
-        <span className="text-[11px] font-semibold text-[var(--color-primary-dark)] underline decoration-dotted underline-offset-4 shrink-0">
-          Open chapter →
-        </span>
-      </Link>
-      <div className="h-px bg-neutral-200 mt-3" aria-hidden />
-    </div>
   );
 }
 
