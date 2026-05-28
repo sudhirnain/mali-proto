@@ -4,60 +4,75 @@
 
 ## Live deployment
 
-Production alias: **https://mali-proto.vercel.app** (Vercel scope `sudhir-4400`, project `mali-proto`). First deploy auto-promoted to production; deploy with `vercel deploy --prod --yes`. No external deps — pure mock data, deploys clean. If the URL hits a Vercel auth wall, fix at Project settings → Deployment Protection.
+Production alias: **https://mali-proto.vercel.app** (Vercel scope `sudhir-nain-s-projects`, project `mali-proto`). Re-linked 2026-05-27 after the old `sudhir-4400` account became inaccessible. Deploy with `vercel deploy --prod --yes`. No external deps — pure mock data, deploys clean. If the URL hits a Vercel auth wall, fix at Project settings → Deployment Protection (the new project still has Standard Protection on as of 2026-05-28).
+
+GitHub: **https://github.com/sudhirnain/mali-proto** (private). Local `.vercel/project.json` is gitignored; re-link from CLI if it's missing or stale.
 
 The shareable demo lands a stranger on `/feed` (root redirects there via `(prototype)/page.tsx`). The DemoNavigator widget — always visible top-right on desktop, compact pill on mobile — is the discovery surface. It has Phase / State / Jump to / **In case you missed** sections. No separate welcome flow.
 
 ## Source of truth
 
-The deck `~/Library/CloudStorage/Dropbox/Mali/Mali 2026 SignUp Onboarding, Tracking UI_UX.pdf` is the brief, NOT a suggestion. Page 14 lists explicit goals for header and journal. When in doubt, re-read the relevant pages directly — don't invent patterns that aren't shown.
+**Primary spec: [SPEC.md](SPEC.md) at the project root.** Compiled 2026-05-28 from the email + meeting transcript + 56-slide review deck. Part A = cross-cutting decisions; Part B = slide-by-slide. Start here before touching any screen.
+
+Underlying sources (all under `mali-source/`, gitignored):
+- `feedback.pptx` — May-22-to-May-28 review deck with Jonas's 38 active comments (56 slides)
+- `deck-extracted.txt` — plain-text extraction of every slide + comment (author/timestamp/position/body)
+- `feedback.txt` — May-28 meeting transcript
+- `design-deck.pdf` — the original brief (page 14 lists explicit feed/journal goals)
 
 Reference apps:
-- **My Baby** (positive reference for the journal pattern) — screenshots IMG_9049 / 9050 / 9055 / 9060 / 9062 / 9063 / 9064 in `~/Library/CloudStorage/Dropbox/Mali/screenshots/`
-- **Current Mali** (the UX we're replacing — Sudhir called it "terrible") — IMG_9042-9048 and the screen recording `maliflowforjournal.MP4`
+- **My Baby** (positive reference) — screenshots IMG_9049 / 9050 / 9055 / 9060 / 9062 / 9063 / 9064 in `mali-source/screenshots/`. Jonas's slide 30 comment *"we pref this one"* anchored on My Baby's Sleep form — copy that pattern for our timer forms (Daytime/Night toggle, Start/End fields, Comments, Add photo).
+- **Current Mali** (the UX we're replacing — Sudhir called it "terrible") — IMG_9042-9048 and the screen recording `mali-source/production-flow.mp4`
 
 ## What's in scope / out of scope
 
-**In scope:** the feed (header + content), the journal (Timeline / Moments / Calendar / Trimester archive / Category detail / Entry detail), entry forms, mom-experience track for pregnancy, birth-handoff celebration, memory threading.
+**In scope:** the feed (header + content), the journal (Timeline / Moments / Calendar / Category detail / Entry detail), entry forms, mom-experience track for both pregnancy AND parenting, birth-handoff celebration, memory threading.
 
-**Explicitly out of scope:** onboarding funnel. The `(onboarding)` route group was deleted on 2026-05-20. Don't reintroduce it without asking.
+**Explicitly out of scope:**
+- Onboarding funnel. The `(onboarding)` route group was deleted on 2026-05-20. Don't reintroduce it without asking.
+- **Trimester archive page** — dropped 2026-05-28 per Jonas's slide 23 strikethrough + transcript: *"we don't need this trimester and open chapter"*. The `/journal/trimester/[t]` route should be deleted along with the trimester chapter wrappers in Timeline.
 
 ## Journal IA (locked)
 
 Three tabs on `/journal`, each a different browsing axis — **same entries, three lenses**:
 
-- **Timeline** (`/journal`) — chronological, day-grouped. In pregnancy phase, day groups are wrapped by **Trimester** chapter headers that link into the archive (see below).
+- **Timeline** (`/journal`) — chronological, day-grouped. **No more trimester chapter wrappers** (dropped 2026-05-28 per slide 11 comment "I think this can go"). Just plain day-grouped entries.
 - **Moments** (`/journal/moments`) — by topic. Phase-aware section grouping; **Memories first** to enforce the family-record framing.
 - **Calendar** (`/journal/calendar`) — month grid with photo/tint cells.
 
 **Moments sections (locked)**:
-- Parenting: Memories · Development (hero=milestones, plus weight-baby / length / head tiles) · Care logs · Health
-- Pregnancy: Memories · Your journey (hero=weekly-journey, no tiles) · Body (kicks, contractions) · Wellbeing (mom-mood, symptoms, hydration, sleep-mom, weight-mom) · Health
+- Parenting: Memories · Development (hero=milestones, plus weight-baby / length / head tiles) · Care logs · Health · **Wellbeing (mom)** — mom-mood, symptoms, sleep-mom, weight-mom continue in parenting per Jonas's slide 13 comment about post-birth weight tracking
+- Pregnancy: Memories · Your journey (hero=JourneyHero with "3rd trimester" + Week + size + due date + progress) · Body (kicks, contractions) · Wellbeing (mom-mood, symptoms, hydration, sleep-mom, weight-mom) · Health
 
-**Don't revert** to a peer-level "Milestones" tab. Milestones is a category (`/journal/category/milestone`), reached as the hero in the Development section. Growth merged into Development for parenting — they're both "how is baby developing." Wellbeing is the mom-experience vertical for pregnancy.
-
-**Trimester archive** (`/journal/trimester/[t]` where `t = t1 | t2 | t3`) — chapter view of pregnancy entries, with a T1/T2/T3 spine for navigation, week-grouped entries, "you are in week N" / "chapter complete" markers. Reached from JourneyHero, from Timeline trimester headers, from the spine.
+**Don't revert** to a peer-level "Milestones" tab. Milestones is a category (`/journal/category/milestone`), reached as the hero in the Development section. Growth merged into Development for parenting — they're both "how is baby developing." Wellbeing is the mom-experience vertical, present in BOTH phases.
 
 ## Phase philosophy ("EY baby-first, pregnancy mom-first")
 
-Client direction, drives every header decision. Parenting (Early Years) centers the **baby**: Lu's name, age, length, weight, baby-care quick-logs. Pregnancy centers the **mom**: Sarah's name, mom-weight, mom-experience quick-logs (mom-mood, kicks, weight-mom).
+Client direction, drives every header decision. Parenting (Early Years) centers the **baby**: Lu's name, age, length, weight, baby-care quick-logs. Pregnancy centers the **mom**: Sarah's name, mom-weight, mom-experience quick-logs.
 
-In pregnancy `StatStrip`, the center is the mom illustration + Sarah's name + "Week N · X weeks to go"; the baby moves to a small right-side fruit-emoji ring labeled "Lu · avocado-sized" (tap → Your-journey hero). Cold copy reads "Welcome, Sarah" — never "Welcome, Lu" in pregnancy.
+In pregnancy `StatStrip` (post 2026-05-28 redesign): left ring = mom weight, center = mom illustration + Sarah's name + ageLabel ("Week 32, Day 4"), right ring = **baby weight 200g + "Baby's weight" + estimate marker** (NOT user-editable per transcript — comes from backend). The previous fruit-emoji baby ring is replaced. The center mom-figure migrates to the per-week watercolor illustration per slide 4 *"change to weekly image"*.
+
+Cold copy reads "Welcome, Sarah" in pregnancy. In parenting the center label is **Lu (baby name)**, per Jonas's slide 4 comment *"Needs to be the baby name (we hardly have the moms name)"*. Parenting also keeps a mom affordance (TBD design — pill, side strip, or section) since mom continues tracking post-birth.
+
+The right ring in pregnancy alternately surfaces **due date** ("24.10.2026") per slide 4 *"This could link to due date"* — tap opens an edit-due-date sheet.
 
 `/feed` body for pregnancy users surfaces `MyWeekCard` (mom-week content) above the tip/quote/CTA cards — pregnant users read about themselves, not the baby. Content from `src/lib/mom-content.ts` (handcrafted blurbs for weeks 6 / 12 / 20 / 28 / 32 / 36 with a fallback).
 
 **Default landing state (set 2026-05-22):** Pregnancy + Populated. Set in [src/lib/phase.tsx:15](src/lib/phase.tsx) (`useState<Phase>("pregnancy")`). Rationale: pregnancy is Mali's differentiator vs My Baby; landing in pregnancy showcases the mom-first track AND sets up the birth-handoff demo. Don't default to parenting — a reviewer may never flip back and miss the peak moment.
 
-## Phase color system
+## Color system (pink only as of 2026-05-28)
 
-- Pregnancy phases (t1-2, t3) → salmon/coral
-- Parenting phase → teal/green
+**Both phases use the coral/salmon palette.** The previous teal-for-parenting / coral-for-pregnancy split is dropped per Jonas's slide 54 *"Make Parenting also Pink."*
 
-The system: `--color-primary*` CSS variables (in `globals.css`) default to coral at `:root` and swap to teal under `[data-phase="parenting"]`. The `data-phase` attribute is set on the outer `<MobileFrame>` wrapper.
+The system: `--color-primary*` CSS variables (in `globals.css`) resolve to coral at `:root`. **The `[data-phase="parenting"]` overrides have been removed** — they used to swap to teal. The `data-phase` attribute is still set on the outer `<MobileFrame>` wrapper for content-aware logic, but it no longer changes chrome color.
 
-Components consume the phase color via `bg-[var(--color-primary)]` / `text-[var(--color-primary-dark)]` / etc. — never hardcoded `bg-coral` for things that should track the phase.
+Components consume via `bg-[var(--color-primary)]` / `text-[var(--color-primary-dark)]` / etc. — never hardcoded `bg-coral`, so future palette tweaks land in one place.
 
-Categories keep their own colors (sleep = purple, nursing = green, etc.) — only the chrome and primary CTAs track the phase.
+Categories keep their own colors (sleep = purple, nursing = green, diaper = amber, milestone = teal, etc.) — those are per-category, not per-phase. Unchanged.
+
+Phase distinction now comes from **content**, not chrome: StatStrip subject (Mom vs Lu), default quick-logs (mom-experience vs baby-care), MilestoneHero (parenting) vs JourneyHero (pregnancy), MyWeekCard appears only in pregnancy.
+
+`BirthHandoff` overlay was coral→teal; needs update to coral→cream or coral→deeper-coral so the "chapter change" still reads without invoking teal.
 
 ## Iconography
 
@@ -111,7 +126,7 @@ Two slices — `live` (seeded from MOCK_ENTRIES + MILESTONES) and `cold` (empty)
 
 **Pregnancy categories** added 2026-05-22: `mom-mood`, `symptoms`, `hydration`, `sleep-mom`. Quick-logs `defaultQuickLogs("pregnancy")` is `weight-mom · mom-mood · kicks`. `expandedHeaderExtras("pregnancy")` is `symptoms · hydration · sleep-mom · contractions`. Mom-mood opens a flex-wrap pill picker (emoji + label) with 5 options: Cheerful · Fine · Anxious · Overwhelmed · Grateful.
 
-**Trimester helpers** in `src/lib/trimester.ts`: `currentMilestoneBucket`, `trimesterFromWeek`, `weekOfEntry`, `getTrimester`, `TRIMESTERS`. Used by Timeline trimester headers + Trimester Archive page.
+**Trimester helpers** in `src/lib/trimester.ts`: `currentMilestoneBucket`, `trimesterFromWeek`, `weekOfEntry`, `getTrimester`, `TRIMESTERS`. After the 2026-05-28 trimester drop, the only remaining caller should be the **JourneyHero card** ("3rd trimester" label inside the expanded progress card per slide 6 *"Move trimester here"*). Audit and remove callers in Timeline + the trimester archive route on cleanup.
 
 **Entry form save contract.** `useSaveEntry(cat, editing?)` in `src/app/(prototype)/log/[category]/page.tsx` does add-entry **and** `router.back()`. Callers must NOT also navigate — otherwise double-back. `SaveBar` and `DoneBar` are the standard terminal buttons; both call into the same flow. `DoneBar` now requires an `onDone` prop (used by KicksForm + ContractionsForm). If `onDone` doesn't trigger a save (e.g., count was 0), the caller must `router.back()` itself.
 
@@ -138,16 +153,19 @@ Two slices — `live` (seeded from MOCK_ENTRIES + MILESTONES) and `cold` (empty)
 - **`StatStrip` values are tappable** to the category detail chart (Length → /journal/category/length, Weight → weight-baby, Mom weight → weight-mom). Side icons use Phosphor outline glyphs (`ruler` + `scale-outline`) at `buttonStyle="ring"` for consistent line weight. Mali's filled `scale` SVG is for category-detail heros, not the small side button.
 - **`JournalPulse`** strip in FeedHeader — "X entries today · last Y ago →" linking to /journal. Cold state reads "Start your journal — tap a card above". Empty by design when no entries.
 - **`MemoryThread` on /feed** — surfaces an anniversary entry (7 / 14 / 30 / 90 / 365 days ago) as a single rich card between MyWeekCard (pregnancy) and the content cards. Phase-aware filtering. Renders null when no anniversary match.
-- **`BirthHandoff` overlay** in `MobileFrame` — watches phase transition `pregnancy → parenting` via `useRef`+`useEffect`, fires once per transition. Renders inside the phone shell at z-60 with coral→teal gradient. Re-fires every transition (handy for demos).
+- **`BirthHandoff` overlay** in `MobileFrame` — watches phase transition `pregnancy → parenting` via `useRef`+`useEffect`, fires once per transition. Renders inside the phone shell at z-60. **Gradient needs update** from coral→teal to coral→cream/deeper-coral (post pink-only decision). Per slide 54, the trigger should also become "1 day after due date" with an X close button. Re-fires every transition (handy for demos).
 - **Milestone-as-memory** — `/journal/category/milestone/[milestoneId]` shows a Capture form when not done (date / note / photo). `setMilestoneDone` accepts `extra = { note, photo }`. Note appends to meta with em-dash. CTA is "Save as memory", not "Lu did it!".
 - **Mom-experience track** — pregnancy `/feed` shows `MyWeekCard` (mom-week content) above the tip/quote/CTA. StatStrip pregnancy centers Mom. Wellbeing section in Moments holds mom-experience categories. Pregnancy Right-now suggestions never duplicate verb destinations.
-- The phase-color CSS variable system — easy to extend, no class-name string concatenation hacks.
+- The CSS variable system for `--color-primary*` — easy to extend, no class-name string concatenation hacks. (No longer phase-aware after the pink-only decision; still useful for future palette tweaks.)
 - **Symmetric StatStrip side rings** — both phases now use the same SideStat treatment on both left and right (`border border-[var(--color-primary)]/40 bg-white/40`) so the side icons read as a pair flanking the center hero. Don't introduce stronger borders/fills on one side only.
 - **DemoNavigator "In case you missed"** — 4-item demo-path list at the bottom of the widget. Each row orchestrates phase + cold mode + route in one click. The birth-handoff entry uses a 350ms setTimeout to force React to commit the pregnancy state before flipping to parenting (otherwise React batches the two setPhase calls and the BirthHandoff `useRef` transition detector doesn't fire). Placed last on purpose — "safety net" framing, not "starting line".
 - **Wired terminal buttons on every entry form.** Kicks: Done saves `{count} kicks, {min} min` with duration. Contractions: Stop toggles running state + counter; Done saves `{N} contractions, ~45s each`. Timer/Measurement/Event/Note all use SaveBar wired to useSaveEntry. No more dead Done buttons.
 
-## Plan file
+## Where to look
 
-The active plan lives at `~/.claude/plans/we-are-working-on-linked-forest.md` (Feed Header redesign + Mom-experience track + Trimester archive + JournalEntryCard variants + BirthHandoff + Memory thread + Milestone-as-memory + verb-row revert).
-
-Earlier plan (still relevant for the 10 user scenarios): `~/.claude/plans/i-am-myself-confused-snazzy-moth.md`.
+- **[SPEC.md](SPEC.md)** — canonical screen-by-screen spec (compiled from email + transcript + 56-slide deck on 2026-05-28). Part A = cross-cutting rules, Part B = per-slide reference.
+- **[HANDOFF.md](HANDOFF.md)** — current state for picking up the project (what's done, what's next, open questions).
+- **[BACKLOG.md](BACKLOG.md)** — older priority list of gaps; some items now in SPEC.md.
+- Earlier plans (largely superseded by SPEC.md):
+  - `~/.claude/plans/we-are-working-on-linked-forest.md` (Feed Header redesign + Mom-experience track + Trimester archive + JournalEntryCard variants + BirthHandoff + Memory thread + Milestone-as-memory + verb-row revert)
+  - `~/.claude/plans/i-am-myself-confused-snazzy-moth.md` (10 user scenarios)
