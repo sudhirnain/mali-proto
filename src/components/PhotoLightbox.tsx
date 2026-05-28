@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 
 /**
@@ -78,12 +78,38 @@ function Overlay({
 }) {
   const photo = photos[index];
   const multi = photos.length > 1;
+  const touchStartX = useRef<number | null>(null);
+
+  // Keyboard navigation — arrow keys + Escape (desktop demos / accessibility).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") onPrev();
+      else if (e.key === "ArrowRight") onNext();
+      else if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onPrev, onNext, onClose]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    // > 50px horizontal swipe = navigate. Right→left swipe goes to next.
+    if (delta < -50) onNext();
+    else if (delta > 50) onPrev();
+  };
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="absolute inset-0 z-[70] bg-black/90 flex items-center justify-center"
+      className="absolute inset-0 z-[70] bg-black/90 flex items-center justify-center touch-pan-y"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <button
         type="button"

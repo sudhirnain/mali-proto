@@ -77,6 +77,66 @@ export const MOCK_ENTRIES: Entry[] = [
   { id: "e21", categoryId: "note", at: iso(14 * DAY + 6 * HOUR), meta: "Held Lu skin-to-skin for an hour. Quietest hour I've ever had." },
   // 30 days ago (~a month): a first
   { id: "e22", categoryId: "picture", at: iso(30 * DAY + 8 * HOUR), meta: "First time meeting grandma", photo: UNSPLASH("1502086223501-7ea6ecd79368") },
+
+  // ─────────────────────────────────────────────────────────────────────
+  // PREGNANCY (week-32 user). Without these, pregnancy + Populated showed
+  // empty timelines / category lists / Wellbeing section. One entry per
+  // pregnancy category at minimum so every category-detail screen
+  // populates.
+  // ─────────────────────────────────────────────────────────────────────
+  { id: "p1", categoryId: "mom-mood", at: iso(3 * HOUR), meta: "Cheerful" },
+  { id: "p2", categoryId: "hydration", at: iso(5 * HOUR), meta: "Glass (350ml)" },
+  { id: "p3", categoryId: "kicks", at: iso(9 * HOUR), durationMin: 23, meta: "10 kicks, 23 min" },
+  { id: "p4", categoryId: "symptoms", at: iso(12 * HOUR), meta: "Back pain" },
+
+  // Yesterday
+  { id: "p5", categoryId: "weight-mom", at: iso(DAY + 7 * HOUR), meta: "68 kg" },
+  { id: "p6", categoryId: "sleep-mom", at: iso(DAY + 12 * HOUR), durationMin: 440, meta: "7 h 20 min, night" },
+  { id: "p7", categoryId: "hydration", at: iso(DAY + 4 * HOUR), meta: "Bottle (500ml)" },
+
+  // 2 days ago
+  { id: "p8", categoryId: "mom-mood", at: iso(2 * DAY + 5 * HOUR), meta: "Anxious" },
+  { id: "p9", categoryId: "contractions", at: iso(2 * DAY + 14 * HOUR), durationMin: 1, meta: "1 contraction, ~40s" },
+
+  // 3 days ago — pregnancy memory note
+  { id: "p10", categoryId: "note", at: iso(3 * DAY + 10 * HOUR), meta: "Felt the strongest kick yet — startled me at dinner." },
+
+  // 4 days ago
+  { id: "p11", categoryId: "weight-mom", at: iso(4 * DAY + 7 * HOUR), meta: "67.5 kg" },
+  { id: "p12", categoryId: "mom-mood", at: iso(4 * DAY + 8 * HOUR), meta: "Grateful" },
+  { id: "p13", categoryId: "kicks", at: iso(4 * DAY + 6 * HOUR), durationMin: 41, meta: "10 kicks, 41 min" },
+
+  // 5 days ago — prenatal checkup
+  { id: "p14", categoryId: "doctor", at: iso(5 * DAY + 4 * HOUR), meta: "Routine prenatal checkup, all normal" },
+
+  // ─────────────────────────────────────────────────────────────────────
+  // PARENTING — fill the categories that weren't represented in the seed
+  // above (solids, pumping, stroll, length, head, temperature, illnesses,
+  // medications, mood, quote). One per category so the populated state
+  // has SOMETHING for every category-detail screen.
+  // ─────────────────────────────────────────────────────────────────────
+  { id: "pa1", categoryId: "stroll", at: iso(3 * HOUR), durationMin: 30, meta: "30 min, evening walk" },
+  { id: "pa2", categoryId: "solids", at: iso(8 * HOUR), meta: "Fruit, mashed pear" },
+
+  // Yesterday
+  { id: "pa3", categoryId: "pumping", at: iso(DAY + 6 * HOUR), durationMin: 8, meta: "8 min, 90ml, both" },
+  { id: "pa4", categoryId: "medications", at: iso(DAY + 2 * HOUR), meta: "Vitamin D, 1 drop" },
+
+  // 2 days ago
+  { id: "pa5", categoryId: "length", at: iso(2 * DAY + 10 * HOUR), meta: "63 cm" },
+  { id: "pa6", categoryId: "temperature", at: iso(2 * DAY + 16 * HOUR), meta: "37.0 °C" },
+
+  // 3 days ago
+  { id: "pa7", categoryId: "illnesses", at: iso(3 * DAY + 9 * HOUR), meta: "Cough, mild" },
+
+  // 4 days ago — head circumference
+  { id: "pa8", categoryId: "head", at: iso(4 * DAY + 12 * HOUR), meta: "40 cm" },
+
+  // 5 days ago — mood log
+  { id: "pa9", categoryId: "cheerful", at: iso(5 * DAY + 7 * HOUR), meta: "Smiles all day" },
+
+  // 6 days ago — quote
+  { id: "pa10", categoryId: "quote", at: iso(6 * DAY + 9 * HOUR), meta: "The best and most beautiful things in the world cannot be seen or touched; they are felt." },
 ];
 
 // Pregnancy mock kicks

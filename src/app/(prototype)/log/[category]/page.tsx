@@ -585,7 +585,7 @@ function KickCelebration({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-7 text-center shadow-2xl relative">
+      <div className="bg-white rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl relative">
         <button
           type="button"
           onClick={onClose}
@@ -602,7 +602,7 @@ function KickCelebration({
         <p className="text-sm text-neutral-700 leading-relaxed">
           You felt{" "}
           <span className="font-semibold text-neutral-900">{count} movements</span> in{" "}
-          <span className="font-semibold text-neutral-900">{minutes} minutes</span>.
+          <span className="font-semibold text-neutral-900">{minutes} {minutes === 1 ? "minute" : "minutes"}</span>.
         </p>
         <p className="text-xs text-neutral-500 mt-3 leading-relaxed">
           Healthy babies move at least 10 times in two hours. Yours is doing great.

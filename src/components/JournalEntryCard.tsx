@@ -1,11 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Illustration } from "./Illustration";
 import { useLightbox } from "./PhotoLightbox";
 import { getCategory, type Category } from "@/lib/categories";
 import { formatTime } from "@/lib/format";
+import { useEntries } from "@/lib/journal-store";
 import type { Entry } from "@/lib/mock-entries";
 
 /**
@@ -38,6 +40,25 @@ function variantOf(catId: string): Variant {
   return "care";
 }
 
+/**
+ * All photos from all entries, sorted newest first. Tapping any photo opens
+ * the lightbox seeded with this array + the index of the tapped photo, so
+ * the user can swipe through their whole photo history (slide 51 — "moms
+ * can swipe through"). Memoized off useEntries so the list updates as
+ * entries are added/removed during the demo.
+ */
+function useAllPhotos(): string[] {
+  const entries = useEntries();
+  return useMemo(
+    () =>
+      entries
+        .filter((e) => e.photo)
+        .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+        .map((e) => e.photo!),
+    [entries]
+  );
+}
+
 export function JournalEntryCard({ entry }: { entry: Entry }) {
   const cat = getCategory(entry.categoryId);
   if (!cat) return null;
@@ -54,6 +75,8 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
   const showLargeHero = hasPhoto && LARGE_PHOTO_IDS.has(cat.id);
   const showSmallThumb = hasPhoto && !LARGE_PHOTO_IDS.has(cat.id); // quotes only, currently
   const lightbox = useLightbox();
+  const allPhotos = useAllPhotos();
+  const photoIndex = hasPhoto ? allPhotos.indexOf(entry.photo!) : -1;
 
   return (
     <Link
@@ -66,7 +89,7 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            lightbox.open([entry.photo!]);
+            lightbox.open(allPhotos, Math.max(0, photoIndex));
           }}
           aria-label="View photo full screen"
           className="relative w-full aspect-[16/10] bg-neutral-100 block active:opacity-95"
@@ -102,13 +125,21 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
             </span>
           </div>
         </div>
-        {showSmallThumb && <PhotoThumb src={entry.photo!} />}
+        {showSmallThumb && <PhotoThumb src={entry.photo!} allPhotos={allPhotos} index={photoIndex} />}
       </div>
     </Link>
   );
 }
 
-function PhotoThumb({ src }: { src: string }) {
+function PhotoThumb({
+  src,
+  allPhotos,
+  index,
+}: {
+  src: string;
+  allPhotos: string[];
+  index: number;
+}) {
   const lightbox = useLightbox();
   return (
     <button
@@ -116,7 +147,7 @@ function PhotoThumb({ src }: { src: string }) {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        lightbox.open([src]);
+        lightbox.open(allPhotos, Math.max(0, index));
       }}
       aria-label="View photo full screen"
       className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 bg-neutral-100 active:opacity-90"
@@ -127,6 +158,8 @@ function PhotoThumb({ src }: { src: string }) {
 }
 
 function CareRow({ entry, cat }: { entry: Entry; cat: Category }) {
+  const allPhotos = useAllPhotos();
+  const photoIndex = entry.photo ? allPhotos.indexOf(entry.photo) : -1;
   return (
     <Link
       href={`/journal/entry/${entry.id}`}
@@ -155,12 +188,14 @@ function CareRow({ entry, cat }: { entry: Entry; cat: Category }) {
       <span className="text-[11px] text-neutral-400 tabular-nums shrink-0 leading-none self-stretch flex items-center">
         {formatTime(entry.at)}
       </span>
-      {entry.photo && <PhotoThumb src={entry.photo} />}
+      {entry.photo && <PhotoThumb src={entry.photo} allPhotos={allPhotos} index={photoIndex} />}
     </Link>
   );
 }
 
 function MeasurementRow({ entry, cat }: { entry: Entry; cat: Category }) {
+  const allPhotos = useAllPhotos();
+  const photoIndex = entry.photo ? allPhotos.indexOf(entry.photo) : -1;
   return (
     <Link
       href={`/journal/entry/${entry.id}`}
@@ -187,7 +222,7 @@ function MeasurementRow({ entry, cat }: { entry: Entry; cat: Category }) {
       <span className="text-[11px] text-neutral-400 tabular-nums shrink-0 leading-none self-stretch flex items-center">
         {formatTime(entry.at)}
       </span>
-      {entry.photo && <PhotoThumb src={entry.photo} />}
+      {entry.photo && <PhotoThumb src={entry.photo} allPhotos={allPhotos} index={photoIndex} />}
     </Link>
   );
 }

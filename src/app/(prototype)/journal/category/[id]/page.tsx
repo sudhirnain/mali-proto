@@ -131,8 +131,8 @@ export default function CategoryDetailPage() {
         </div>
       </header>
 
-      {cat.hasGraph && <ChartSection cat={cat} />}
-      {PATTERN_CATEGORIES.has(cat.id) && <PatternSection cat={cat} entries={entries} />}
+      {cat.hasGraph && entries.length > 0 && <ChartSection cat={cat} />}
+      {PATTERN_CATEGORIES.has(cat.id) && entries.length > 0 && <PatternSection cat={cat} entries={entries} />}
 
       {/* Entries */}
       <div className="mt-2">
@@ -418,16 +418,6 @@ function ChartSection({ cat }: { cat: Category }) {
   const lastIdx = points.length - 1;
   const [lx, lv] = points[lastIdx];
 
-  const unit =
-    cat.id === "head" || cat.id === "length"
-      ? "cm"
-      : cat.id === "kicks"
-        ? "kicks"
-        : cat.id === "contractions"
-          ? "contractions"
-          : cat.id === "sleep"
-            ? "hours"
-            : "kg";
   const periodLabel = isDots ? "Last 7 days" : "Last 12 weeks";
 
   return (
@@ -437,7 +427,7 @@ function ChartSection({ cat }: { cat: Category }) {
           <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
             Trend
           </div>
-          <div className="text-xs text-neutral-500">{periodLabel} · {unit}</div>
+          <div className="text-xs text-neutral-500">{periodLabel}</div>
         </div>
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto" preserveAspectRatio="none">
           {/* ideal band — only for growth metrics with a real reference range */}
@@ -508,8 +498,11 @@ function ChartSection({ cat }: { cat: Category }) {
           )}
         </svg>
         <p className="text-sm text-neutral-700 leading-relaxed mt-3">
-          Lu is{" "}
-          <span className="font-semibold text-neutral-900">on track</span> for healthy growth.{" "}
+          {/* Mom-weight category is about Sarah's pregnancy gain, not baby's
+           *  growth — copy needs to match the subject of the graph. */}
+          {cat.id === "weight-mom" ? "You are " : "Lu is "}
+          <span className="font-semibold text-neutral-900">on track</span>{" "}
+          {cat.id === "weight-mom" ? "with healthy weight gain." : "for healthy growth."}{" "}
           <span className="text-[var(--color-primary)] font-semibold">Read more</span>
         </p>
       </div>
