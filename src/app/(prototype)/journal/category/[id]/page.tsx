@@ -441,38 +441,65 @@ const BAND_LOWER: Record<ChartRange, number[]> = {
   "10y": [0.05, 0.18, 0.28, 0.38, 0.46, 0.53, 0.58, 0.62, 0.65, 0.68],
 };
 
+// Y-axis value ranges per category per range, in real units (kg / cm). These
+// drive both the Y-axis tick labels and the "now" value annotation so the
+// chart reads as a scientific growth chart instead of a decorative blob.
+const Y_RANGE: Record<string, Partial<Record<ChartRange, [number, number]>>> = {
+  "weight-baby": { "3m": [2, 8], "1y": [2, 12], "5y": [2, 25], "10y": [2, 45] },
+  length:        { "3m": [48, 65], "1y": [48, 80], "5y": [48, 115], "10y": [48, 145] },
+  head:          { "3m": [33, 42], "1y": [33, 48], "5y": [33, 53], "10y": [33, 57] },
+  "weight-mom":  { "3m": [60, 80] },
+};
+
+// X-axis ticks per range: which point indices to label, and what to call them.
+const X_TICKS: Record<ChartRange, { idx: number; label: string }[]> = {
+  "3m":  [{ idx: 0, label: "0" }, { idx: 4, label: "1m" },  { idx: 8, label: "2m" },  { idx: 11, label: "3m" }],
+  "1y":  [{ idx: 0, label: "0" }, { idx: 3, label: "3m" },  { idx: 6, label: "6m" },  { idx: 9, label: "9m" },  { idx: 11, label: "12m" }],
+  "5y":  [{ idx: 0, label: "0" }, { idx: 2, label: "1y" },  { idx: 4, label: "2y" },  { idx: 6, label: "3y" },  { idx: 8, label: "4y" },  { idx: 9, label: "5y" }],
+  "10y": [{ idx: 0, label: "0" }, { idx: 2, label: "2y" },  { idx: 4, label: "4y" },  { idx: 6, label: "6y" },  { idx: 8, label: "8y" },  { idx: 9, label: "10y" }],
+};
+
+function unitFor(catId: string): string {
+  if (catId.startsWith("weight")) return "kg";
+  if (catId === "length" || catId === "head") return "cm";
+  return "";
+}
+
+function formatTick(v: number): string {
+  if (Number.isInteger(v)) return String(v);
+  return v.toFixed(v < 10 ? 1 : 0);
+}
+
 function ChartSection({ cat }: { cat: Category }) {
   const w = 320;
-  const h = 140;
-  const padX = 16;
-  const padY = 18;
+  const h = 175;
+  const padL = 26;
+  const padR = 10;
+  const padT = 14;
+  const padB = 22;
 
   const isDots = DOTS_CATEGORIES.has(cat.id);
   const hasRangePicker = LONG_RANGE_CATEGORIES.has(cat.id);
   const [range, setRange] = useState<ChartRange>("3m");
 
   const longRange = range === "5y" || range === "10y";
+  const bandRange: ChartRange = hasRangePicker ? range : "3m";
 
   const points: [number, number][] = isDots
     ? [[0, 0.42], [1, 0.31], [2, 0.55], [3, 0.48], [4, 0.62], [5, 0.40], [6, 0.71]]
-    : hasRangePicker
-      ? RANGE_POINTS[range]
-      : RANGE_POINTS["3m"];
+    : RANGE_POINTS[bandRange];
 
   const N = points.length - 1;
-  const sx = (i: number) => padX + (i / N) * (w - padX * 2);
-  const sy = (v: number) => h - padY - v * (h - padY * 2);
+  const sx = (i: number) => padL + (i / N) * (w - padL - padR);
+  const sy = (v: number) => h - padB - v * (h - padB - padT);
 
-  // Build the curving band path: upper envelope L→R, then lower envelope R→L,
-  // closed. Only used for non-dots growth charts.
-  const bandRange: ChartRange = hasRangePicker ? range : "3m";
+  // Curving WHO-style band: upper envelope L→R, then lower envelope R→L, closed.
   const upper = BAND_UPPER[bandRange];
   const lower = BAND_LOWER[bandRange];
   const bandPath =
     upper.map((v, i) => `${i === 0 ? "M" : "L"}${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join(" ") +
     " " +
-    lower
-      .map((v, i) => v)
+    [...lower]
       .reverse()
       .map((v, i) => `L${sx(lower.length - 1 - i).toFixed(1)},${sy(v).toFixed(1)}`)
       .join(" ") +
@@ -490,8 +517,20 @@ function ChartSection({ cat }: { cat: Category }) {
       ? RANGE_TABS.find((t) => t.id === range)!.periodLabel
       : "Last 12 weeks";
 
-  // Dots on the line — sparser at long ranges so 10y doesn't render as a hairball.
   const lineDotStep = longRange ? 2 : 1;
+
+  // Real-unit axis: maps the normalized trend back to kg / cm for the labels.
+  const yRange = Y_RANGE[cat.id]?.[bandRange];
+  const yUnit = unitFor(cat.id);
+  const yTicks = yRange
+    ? [0, 0.25, 0.5, 0.75, 1].map((pos) => ({
+        pos,
+        label: formatTick(yRange[0] + pos * (yRange[1] - yRange[0])),
+      }))
+    : [];
+  const xTicks = isDots ? [] : X_TICKS[bandRange];
+  const nowValue = yRange ? yRange[0] + lv * (yRange[1] - yRange[0]) : null;
+  const nowLabel = nowValue != null ? `${formatTick(nowValue)} ${yUnit}` : "";
 
   return (
     <div className="px-4 pt-5">
@@ -519,19 +558,70 @@ function ChartSection({ cat }: { cat: Category }) {
           </div>
         )}
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto" preserveAspectRatio="none">
-          {/* WHO-style healthy-range band — curves upward with age since
-           *  expected weight/length at month 0 is not the same as year 5. */}
+          {/* Horizontal gridlines at each Y tick. Faint, decorative. */}
+          {!isDots && yTicks.map((t, i) => (
+            <line
+              key={`gh-${i}`}
+              x1={padL}
+              y1={sy(t.pos)}
+              x2={w - padR}
+              y2={sy(t.pos)}
+              stroke="var(--color-neutral-200)"
+              strokeWidth={1}
+              opacity={i === 0 ? 1 : 0.55}
+            />
+          ))}
+          {/* Y-axis tick labels (kg / cm). */}
+          {!isDots && yTicks.map((t, i) => (
+            <text
+              key={`yl-${i}`}
+              x={padL - 4}
+              y={sy(t.pos) + 3}
+              textAnchor="end"
+              fontSize="8"
+              fill="var(--color-neutral-500)"
+            >
+              {t.label}
+            </text>
+          ))}
+          {/* Y-axis unit (top-left corner). */}
+          {!isDots && yUnit && (
+            <text
+              x={padL - 4}
+              y={padT - 2}
+              textAnchor="end"
+              fontSize="8"
+              fontWeight="600"
+              fill="var(--color-neutral-700)"
+            >
+              {yUnit}
+            </text>
+          )}
+          {/* WHO-style healthy-range band — curves upward with age. */}
           {!isDots && (
             <path
               d={bandPath}
               fill="var(--color-cat-food-soft)"
-              opacity={0.55}
+              opacity={0.6}
             />
           )}
+          {/* Band percentile legend (matches the My Baby "Top 3% to Bottom 3%"
+           *  treatment so the band reads as a scientific reference, not
+           *  a vague tinted shape). */}
+          {!isDots && (
+            <text
+              x={w - padR - 4}
+              y={padT + 6}
+              textAnchor="end"
+              fontSize="7.5"
+              fill="var(--color-cat-food)"
+              opacity={0.85}
+            >
+              3rd – 97th percentile
+            </text>
+          )}
           {isDots ? (
-            // Dots only — no connecting line. Kicks/contractions are counts,
-            // not a continuous signal (transcript: "It's a count and it
-            // doesn't need any [line]").
+            // Dots only — no connecting line. Kicks/contractions are counts.
             points.map(([i, v], idx) => (
               <circle
                 key={idx}
@@ -566,12 +656,12 @@ function ChartSection({ cat }: { cat: Category }) {
                     opacity={0.6}
                   />
                 ))}
-              {/* now marker */}
+              {/* now marker — vertical line through the chart, dot at value */}
               <line
                 x1={sx(lx)}
-                y1={padY}
+                y1={padT}
                 x2={sx(lx)}
-                y2={h - padY}
+                y2={h - padB}
                 stroke="var(--color-neutral-300)"
                 strokeWidth={1}
               />
@@ -583,8 +673,35 @@ function ChartSection({ cat }: { cat: Category }) {
                 stroke="white"
                 strokeWidth={2}
               />
+              {/* now value label above the dot — what makes this read as "data"
+               *  rather than decoration. */}
+              {nowLabel && (
+                <text
+                  x={sx(lx)}
+                  y={sy(lv) - 10}
+                  textAnchor={lx > N / 2 ? "end" : "middle"}
+                  fontSize="10"
+                  fontWeight="700"
+                  fill={`var(--color-${cat.color})`}
+                >
+                  {nowLabel}
+                </text>
+              )}
             </>
           )}
+          {/* X-axis tick labels (time). */}
+          {!isDots && xTicks.map((t, i) => (
+            <text
+              key={`xl-${i}`}
+              x={sx(t.idx)}
+              y={h - 6}
+              textAnchor="middle"
+              fontSize="8"
+              fill="var(--color-neutral-500)"
+            >
+              {t.label}
+            </text>
+          ))}
         </svg>
         <p className="text-sm text-neutral-700 leading-relaxed mt-3">
           {/* Mom-weight category is about Sarah's pregnancy gain, not baby's

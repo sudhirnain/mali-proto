@@ -810,7 +810,7 @@ function KickCelebration({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
       <div className="bg-white rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl relative">
         <button
           type="button"

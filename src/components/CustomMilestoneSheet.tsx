@@ -56,9 +56,9 @@ export function CustomMilestoneSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center bg-black/40">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
       <div className="absolute inset-0" onClick={onClose} role="presentation" />
-      <div className="relative bg-white rounded-t-3xl md:rounded-3xl w-full md:max-w-sm px-5 pt-5 pb-7 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-3xl w-full max-w-sm px-5 pt-5 pb-7 shadow-xl max-h-full overflow-y-auto">
         <div className="flex items-baseline justify-between mb-1">
           <div className="serif text-[19px] font-semibold text-neutral-900">
             New milestone
