@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { usePhase } from "@/lib/phase";
-import { useColdMode } from "@/lib/cold-mode";
+import { useColdMode, useBaby } from "@/lib/cold-mode";
 import { defaultQuickLogs, expandedHeaderExtras } from "@/lib/categories";
 import { useEntries } from "@/lib/journal-store";
 import { TODAY_DATE } from "@/lib/mock-entries";
+import { useScrolledPast } from "@/lib/scroll";
 import { StatStrip } from "./StatStrip";
 import { QuickLogCard, MiniLogTile } from "./QuickLogCard";
 import { JournalPulse } from "./JournalPulse";
@@ -41,7 +42,12 @@ export function FeedHeader() {
   const { phase } = usePhase();
   const cold = useColdMode();
   const entries = useEntries();
+  const baby = useBaby();
   const [expanded, setExpanded] = useState(false);
+  // Slide 9: when scrolled, the header collapses to a single floating pill
+  // ("Week N day D"). Threshold tuned to roughly hide once the StatStrip is
+  // off-screen.
+  const scrolled = useScrolledPast(180);
 
   const isPreg = phase === "pregnancy";
   const quickLogs = defaultQuickLogs(phase);
@@ -70,6 +76,19 @@ export function FeedHeader() {
 
   return (
     <section className={`${bgClass} relative md:pt-11`}>
+      {/* Slide 9 — collapsed scroll pill. Floats fixed at the top of the
+       *  phone shell when the user has scrolled past the StatStrip; tapping
+       *  scrolls back to the top to re-reveal the full header. */}
+      {isPreg && scrolled && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed top-2 md:top-11 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur shadow-md text-[12px] font-semibold text-neutral-900 active:scale-95 transition"
+        >
+          {baby.ageLabel ?? `Week ${baby.week ?? "—"}`}
+        </button>
+      )}
+
       <StatStrip />
 
       {/* Quick-log row — pregnancy uses 5 mini tiles (tighter, all mom-experience

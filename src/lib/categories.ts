@@ -50,7 +50,7 @@ export const CATEGORIES: Category[] = [
   // Health
   { id: "doctor", label: "Doctor's visit", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting", "pregnancy"], iconName: "doctor" },
   { id: "vaccinations", label: "Vaccinations", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting"], iconName: "syringe" },
-  { id: "temperature", label: "Temperature", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting"], iconName: "thermometer" },
+  { id: "temperature", label: "Temperature", group: "Health", color: "cat-health", formKind: "measurement", phases: ["parenting"], iconName: "thermometer" },
   { id: "illnesses", label: "Illnesses", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting"], iconName: "heart-pulse" },
   { id: "medications", label: "Medications", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting"], iconName: "pill" },
 

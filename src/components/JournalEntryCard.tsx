@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Illustration } from "./Illustration";
+import { useLightbox } from "./PhotoLightbox";
 import { getCategory, type Category } from "@/lib/categories";
 import { formatTime } from "@/lib/format";
 import type { Entry } from "@/lib/mock-entries";
@@ -43,6 +46,7 @@ export function JournalEntryCard({ entry }: { entry: Entry }) {
 function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
   const hasPhoto = Boolean(entry.photo);
   const isQuote = cat.id === "quote";
+  const lightbox = useLightbox();
 
   return (
     <Link
@@ -50,7 +54,16 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
       className="block bg-white rounded-2xl overflow-hidden border border-neutral-100 shadow-sm active:scale-[0.99] transition"
     >
       {hasPhoto && (
-        <div className="relative w-full aspect-[16/10] bg-neutral-100">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            lightbox.open([entry.photo!]);
+          }}
+          aria-label="View photo full screen"
+          className="relative w-full aspect-[16/10] bg-neutral-100 block active:opacity-95"
+        >
           <Image
             src={entry.photo!}
             alt=""
@@ -58,7 +71,7 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
             sizes="(max-width: 640px) 100vw, 360px"
             className="object-cover"
           />
-        </div>
+        </button>
       )}
       <div className="px-4 py-3.5">
         <div
@@ -86,10 +99,20 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
 }
 
 function PhotoThumb({ src }: { src: string }) {
+  const lightbox = useLightbox();
   return (
-    <div className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 bg-neutral-100">
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        lightbox.open([src]);
+      }}
+      aria-label="View photo full screen"
+      className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 bg-neutral-100 active:opacity-90"
+    >
       <Image src={src} alt="" fill sizes="36px" className="object-cover" />
-    </div>
+    </button>
   );
 }
 

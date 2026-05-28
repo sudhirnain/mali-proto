@@ -136,7 +136,20 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const [side, setSide] = useState<"left" | "right" | "both">(() => parseSide(editing?.meta) ?? "right");
   const [minutes, setMinutes] = useState(editing?.durationMin ?? 0);
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
-  const showSide = cat.id === "nursing";
+  // Slide 27/30/34/36 — per-category form extras copied from My Baby:
+  // Sleep gets Daytime/Night, Bottle gets ml + Breast milk/Formula, Pumping
+  // gets ml + L/R/Both, all three get a Comments field.
+  const showSide = cat.id === "nursing" || cat.id === "pumping";
+  const showQuantity = cat.id === "bottle" || cat.id === "pumping";
+  const showSleepKind = cat.id === "sleep";
+  const showMilkType = cat.id === "bottle";
+  const showComments = cat.id === "sleep" || cat.id === "bottle" || cat.id === "pumping";
+
+  const [sleepKind, setSleepKind] = useState<"Daytime" | "Night">("Daytime");
+  const [quantityMl, setQuantityMl] = useState<number>(cat.id === "bottle" ? 120 : 90);
+  const [milkType, setMilkType] = useState<"Breast milk" | "Formula">("Breast milk");
+  const [comments, setComments] = useState<string>("");
+
   const save = useSaveEntry(cat, editing);
   const timer = useActiveTimer();
 
@@ -166,6 +179,22 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         </div>
       </div>
 
+      {showSleepKind && (
+        <div className="bg-neutral-50 rounded-full p-1 flex">
+          {(["Daytime", "Night"] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => setSleepKind(k)}
+              className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${
+                sleepKind === k ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
+              }`}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+      )}
+
       {showSide && (
         <div className="bg-neutral-50 rounded-full p-1 flex">
           {(["left", "both", "right"] as const).map((s) => (
@@ -177,6 +206,36 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               }`}
             >
               {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {showQuantity && (
+        <Field label="Quantity (ml)">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={quantityMl}
+            min={0}
+            step={10}
+            onChange={(e) => setQuantityMl(Number(e.target.value) || 0)}
+            className="w-full text-base border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] tabular-nums"
+          />
+        </Field>
+      )}
+
+      {showMilkType && (
+        <div className="bg-neutral-50 rounded-full p-1 flex">
+          {(["Breast milk", "Formula"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMilkType(m)}
+              className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${
+                milkType === m ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
+              }`}
+            >
+              {m}
             </button>
           ))}
         </div>
@@ -200,6 +259,18 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         </button>
       </div>
 
+      {showComments && (
+        <Field label="Comments (optional)">
+          <textarea
+            rows={2}
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            placeholder="Anything you want to remember?"
+            className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
+          />
+        </Field>
+      )}
+
       <PhotoAttachField photo={photo} onChange={setPhoto} />
 
       <SaveBar
@@ -207,11 +278,17 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         editing={editing}
         onSave={() => {
           const finalMin = runningHere ? timer.stop() : liveMinutes || 1;
+          const dur = formatDurationShort(finalMin);
+          const parts: string[] = [dur];
+          if (showSleepKind) parts.push(sleepKind);
+          if (showQuantity) parts.push(`${quantityMl}ml`);
+          if (showMilkType) parts.push(milkType);
+          if (showSide) parts.push(side);
+          const note = comments.trim();
+          const baseMeta = parts.join(", ");
           save({
             durationMin: finalMin,
-            meta: showSide
-              ? `${formatDurationShort(finalMin)}, ${side}`
-              : formatDurationShort(finalMin),
+            meta: note ? `${baseMeta} — ${note}` : baseMeta,
             photo,
           });
         }}
@@ -248,10 +325,25 @@ function formatDurationShort(min: number): string {
 }
 
 function MeasurementForm({ cat, editing }: { cat: Category; editing?: Entry }) {
-  const unit = cat.id.startsWith("weight") ? "kg" : cat.id === "length" ? "cm" : "cm";
+  const unit =
+    cat.id === "temperature"
+      ? "°C"
+      : cat.id.startsWith("weight")
+        ? "kg"
+        : cat.id === "length"
+          ? "cm"
+          : "cm";
   const initialValue =
     parseLeadingNumber(editing?.meta) ??
-    (cat.id === "weight-baby" ? 5.4 : cat.id === "length" ? 63 : cat.id === "head" ? 40 : 60.0);
+    (cat.id === "weight-baby"
+      ? 5.4
+      : cat.id === "length"
+        ? 63
+        : cat.id === "head"
+          ? 40
+          : cat.id === "temperature"
+            ? 37.0
+            : 60.0);
   const [value, setValue] = useState<number>(initialValue);
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
   const save = useSaveEntry(cat, editing);
