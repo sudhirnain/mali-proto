@@ -389,9 +389,57 @@ function PatternSection({ cat, entries }: { cat: Category; entries: Entry[] }) {
 
 // Per slide 17/18 + transcript: kicks/contractions are counts, not continuous
 // signals — render as dots over "Last 7 days", not a line. Sleep is the same
-// short-period story. Growth metrics (weight/length/head) keep the line + 12-week
-// trend with the reference band.
+// short-period story. Growth metrics (weight/length/head) keep the line +
+// reference band, with a range picker (3m / 1y / 5y / 10y) per slide 38/39
+// "Allow users to track for 5 or 10 years."
 const DOTS_CATEGORIES = new Set(["kicks", "contractions", "sleep"]);
+const LONG_RANGE_CATEGORIES = new Set(["weight-baby", "length", "head"]);
+
+type ChartRange = "3m" | "1y" | "5y" | "10y";
+
+const RANGE_TABS: { id: ChartRange; label: string; periodLabel: string }[] = [
+  { id: "3m", label: "3m", periodLabel: "Last 12 weeks" },
+  { id: "1y", label: "1y", periodLabel: "Last year" },
+  { id: "5y", label: "5y", periodLabel: "Last 5 years" },
+  { id: "10y", label: "10y", periodLabel: "Last 10 years" },
+];
+
+// Demo sample shapes per range. Growth flattens with age, so longer ranges
+// rise quickly early then taper.
+const RANGE_POINTS: Record<ChartRange, [number, number][]> = {
+  "3m": [
+    [0, 0.50], [1, 0.53], [2, 0.55], [3, 0.58], [4, 0.61], [5, 0.63],
+    [6, 0.66], [7, 0.69], [8, 0.71], [9, 0.74], [10, 0.77], [11, 0.80],
+  ],
+  "1y": [
+    [0, 0.22], [1, 0.30], [2, 0.38], [3, 0.45], [4, 0.51], [5, 0.56],
+    [6, 0.60], [7, 0.64], [8, 0.68], [9, 0.72], [10, 0.76], [11, 0.80],
+  ],
+  "5y": [
+    [0, 0.12], [1, 0.32], [2, 0.46], [3, 0.55], [4, 0.62],
+    [5, 0.67], [6, 0.71], [7, 0.74], [8, 0.77], [9, 0.80],
+  ],
+  "10y": [
+    [0, 0.10], [1, 0.28], [2, 0.40], [3, 0.50],
+    [4, 0.58], [5, 0.65], [6, 0.71], [7, 0.76], [8, 0.79], [9, 0.82],
+  ],
+};
+
+// WHO-style percentile band: upper and lower envelope curves that rise with
+// age, since healthy weight/length at month 0 ≠ healthy weight/length at year
+// 5. The trend line sits inside this band when growth is "on track."
+const BAND_UPPER: Record<ChartRange, number[]> = {
+  "3m":  [0.65, 0.67, 0.70, 0.72, 0.75, 0.78, 0.81, 0.84, 0.87, 0.89, 0.92, 0.95],
+  "1y":  [0.40, 0.47, 0.54, 0.60, 0.66, 0.71, 0.76, 0.80, 0.84, 0.88, 0.91, 0.95],
+  "5y":  [0.30, 0.48, 0.62, 0.72, 0.79, 0.84, 0.87, 0.89, 0.91, 0.93],
+  "10y": [0.30, 0.45, 0.58, 0.67, 0.75, 0.81, 0.85, 0.88, 0.91, 0.94],
+};
+const BAND_LOWER: Record<ChartRange, number[]> = {
+  "3m":  [0.35, 0.37, 0.40, 0.42, 0.45, 0.47, 0.50, 0.52, 0.55, 0.57, 0.59, 0.60],
+  "1y":  [0.10, 0.16, 0.22, 0.28, 0.33, 0.38, 0.43, 0.47, 0.51, 0.55, 0.58, 0.62],
+  "5y":  [0.05, 0.18, 0.30, 0.40, 0.48, 0.54, 0.59, 0.62, 0.64, 0.66],
+  "10y": [0.05, 0.18, 0.28, 0.38, 0.46, 0.53, 0.58, 0.62, 0.65, 0.68],
+};
 
 function ChartSection({ cat }: { cat: Category }) {
   const w = 320;
@@ -400,17 +448,35 @@ function ChartSection({ cat }: { cat: Category }) {
   const padY = 18;
 
   const isDots = DOTS_CATEGORIES.has(cat.id);
+  const hasRangePicker = LONG_RANGE_CATEGORIES.has(cat.id);
+  const [range, setRange] = useState<ChartRange>("3m");
 
-  // Sample points: growth = 12 smooth weeks; dots = 7 daily dots with realistic variance
+  const longRange = range === "5y" || range === "10y";
+
   const points: [number, number][] = isDots
     ? [[0, 0.42], [1, 0.31], [2, 0.55], [3, 0.48], [4, 0.62], [5, 0.40], [6, 0.71]]
-    : [
-        [0, 0.30], [1, 0.34], [2, 0.39], [3, 0.43], [4, 0.49], [5, 0.55],
-        [6, 0.60], [7, 0.66], [8, 0.71], [9, 0.76], [10, 0.81], [11, 0.86],
-      ];
+    : hasRangePicker
+      ? RANGE_POINTS[range]
+      : RANGE_POINTS["3m"];
+
   const N = points.length - 1;
   const sx = (i: number) => padX + (i / N) * (w - padX * 2);
   const sy = (v: number) => h - padY - v * (h - padY * 2);
+
+  // Build the curving band path: upper envelope L→R, then lower envelope R→L,
+  // closed. Only used for non-dots growth charts.
+  const bandRange: ChartRange = hasRangePicker ? range : "3m";
+  const upper = BAND_UPPER[bandRange];
+  const lower = BAND_LOWER[bandRange];
+  const bandPath =
+    upper.map((v, i) => `${i === 0 ? "M" : "L"}${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join(" ") +
+    " " +
+    lower
+      .map((v, i) => v)
+      .reverse()
+      .map((v, i) => `L${sx(lower.length - 1 - i).toFixed(1)},${sy(v).toFixed(1)}`)
+      .join(" ") +
+    " Z";
 
   const path = points
     .map(([i, v], idx) => `${idx === 0 ? "M" : "L"}${sx(i).toFixed(1)},${sy(v).toFixed(1)}`)
@@ -418,7 +484,14 @@ function ChartSection({ cat }: { cat: Category }) {
   const lastIdx = points.length - 1;
   const [lx, lv] = points[lastIdx];
 
-  const periodLabel = isDots ? "Last 7 days" : "Last 12 weeks";
+  const periodLabel = isDots
+    ? "Last 7 days"
+    : hasRangePicker
+      ? RANGE_TABS.find((t) => t.id === range)!.periodLabel
+      : "Last 12 weeks";
+
+  // Dots on the line — sparser at long ranges so 10y doesn't render as a hairball.
+  const lineDotStep = longRange ? 2 : 1;
 
   return (
     <div className="px-4 pt-5">
@@ -429,29 +502,32 @@ function ChartSection({ cat }: { cat: Category }) {
           </div>
           <div className="text-xs text-neutral-500">{periodLabel}</div>
         </div>
+        {hasRangePicker && (
+          <div className="flex gap-1 mb-3 bg-neutral-100 rounded-full p-0.5">
+            {RANGE_TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setRange(t.id)}
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-full transition ${
+                  range === t.id ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto" preserveAspectRatio="none">
-          {/* ideal band — only for growth metrics with a real reference range */}
+          {/* WHO-style healthy-range band — curves upward with age since
+           *  expected weight/length at month 0 is not the same as year 5. */}
           {!isDots && (
-            <rect
-              x={padX}
-              y={sy(0.85)}
-              width={w - padX * 2}
-              height={sy(0.25) - sy(0.85)}
+            <path
+              d={bandPath}
               fill="var(--color-cat-food-soft)"
               opacity={0.55}
             />
           )}
-          {/* baseline */}
-          <line
-            x1={padX}
-            y1={sy(0.55)}
-            x2={w - padX}
-            y2={sy(0.55)}
-            stroke="var(--color-cat-food)"
-            strokeDasharray="3 3"
-            strokeWidth={1}
-            opacity={0.4}
-          />
           {isDots ? (
             // Dots only — no connecting line. Kicks/contractions are counts,
             // not a continuous signal (transcript: "It's a count and it
@@ -477,6 +553,19 @@ function ChartSection({ cat }: { cat: Category }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
+              {/* sample dots along the line (sparser at long ranges) */}
+              {points
+                .filter((_, idx) => idx % lineDotStep === 0 && idx !== lastIdx)
+                .map(([i, v], idx) => (
+                  <circle
+                    key={`d-${idx}`}
+                    cx={sx(i)}
+                    cy={sy(v)}
+                    r={2}
+                    fill={`var(--color-${cat.color})`}
+                    opacity={0.6}
+                  />
+                ))}
               {/* now marker */}
               <line
                 x1={sx(lx)}

@@ -34,7 +34,7 @@ export function QuickLogCard({ id, subtext, badge }: Props) {
   return (
     <Link
       href={href}
-      className="relative flex-1 min-w-0 bg-white rounded-3xl pt-3 pb-11 px-2 shadow-sm flex flex-col items-center gap-1 active:scale-[0.98] transition"
+      className="relative flex-1 min-w-0 bg-white rounded-3xl pt-3 pb-3 px-2 shadow-sm flex flex-col items-center gap-1 active:scale-[0.98] transition"
     >
       {/* Tinted icon circle + badge */}
       <div className="relative">
@@ -61,18 +61,6 @@ export function QuickLogCard({ id, subtext, badge }: Props) {
         {label}
       </div>
       <div className="text-xs text-neutral-500 leading-tight truncate w-full text-center">{sub}</div>
-
-      {/* In-card "+" affordance, thin-stroke circle */}
-      <span
-        className="absolute bottom-2 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-white flex items-center justify-center text-xl font-light leading-none border-2"
-        style={{
-          borderColor: `var(--color-${color}-soft)`,
-          color: `var(--color-${color})`,
-        }}
-        aria-hidden
-      >
-        +
-      </span>
     </Link>
   );
 }

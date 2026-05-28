@@ -6,6 +6,7 @@ export type CategoryGroup =
   | "Growth rate"
   | "Health"
   | "Mood"
+  | "Wellbeing"
   | "Pregnancy"
   | "Memories";
 
@@ -27,6 +28,7 @@ export type Category = {
   phases: Phase[]; // which phases expose this category
   hasGraph?: boolean;
   iconName: string; // for <Illustration name="..." />
+  forMom?: boolean;
 };
 
 export const CATEGORIES: Category[] = [
@@ -60,12 +62,15 @@ export const CATEGORIES: Category[] = [
   { id: "sad", label: "Sad", group: "Mood", color: "cat-mood", formKind: "event", phases: ["parenting"], iconName: "mood-sad" },
   { id: "crying", label: "Crying", group: "Mood", color: "cat-mood", formKind: "event", phases: ["parenting"], iconName: "mood-crying" },
 
-  // Pregnancy — mom-centric tracks come first, baby-emergent (kicks/contractions) follow
-  { id: "weight-mom", label: "My Weight", group: "Pregnancy", color: "cat-growth", formKind: "measurement", phases: ["pregnancy"], hasGraph: true, iconName: "scale" },
-  { id: "mom-mood", label: "Mood", group: "Pregnancy", color: "cat-mood", formKind: "event", phases: ["pregnancy"], iconName: "mood-fine" },
-  { id: "symptoms", label: "Symptoms", group: "Pregnancy", color: "cat-health", formKind: "event", phases: ["pregnancy"], iconName: "heart-pulse" },
-  { id: "hydration", label: "Water", group: "Pregnancy", color: "cat-care", formKind: "event", phases: ["pregnancy"], iconName: "bath" },
-  { id: "sleep-mom", label: "Sleep", group: "Pregnancy", color: "cat-sleep", formKind: "timer", phases: ["pregnancy"], iconName: "crib" },
+  // Wellbeing — mom-experience tracks; present in BOTH phases (mom keeps
+  // tracking after birth per Jonas's slide 13 + slide 29 comments).
+  { id: "weight-mom", label: "My Weight", group: "Wellbeing", color: "cat-growth", formKind: "measurement", phases: ["pregnancy", "parenting"], hasGraph: true, iconName: "scale", forMom: true },
+  { id: "mom-mood", label: "Mood", group: "Wellbeing", color: "cat-mood", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "mood-fine", forMom: true },
+  { id: "symptoms", label: "Symptoms", group: "Wellbeing", color: "cat-health", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "heart-pulse", forMom: true },
+  { id: "hydration", label: "Water", group: "Wellbeing", color: "cat-care", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "bath", forMom: true },
+  { id: "sleep-mom", label: "Sleep", group: "Wellbeing", color: "cat-sleep", formKind: "timer", phases: ["pregnancy", "parenting"], iconName: "crib", forMom: true },
+
+  // Pregnancy — baby-emergent tracks, pregnancy-only.
   { id: "kicks", label: "Kicks", group: "Pregnancy", color: "cat-kicks", formKind: "kicks", phases: ["pregnancy"], hasGraph: true, iconName: "kick" },
   { id: "contractions", label: "Contractions", group: "Pregnancy", color: "cat-contractions", formKind: "contractions", phases: ["pregnancy"], hasGraph: true, iconName: "contraction" },
 
@@ -92,6 +97,7 @@ export function categoriesByGroup(phase: Phase): Record<CategoryGroup, Category[
     "Growth rate": [],
     Health: [],
     Mood: [],
+    Wellbeing: [],
     Pregnancy: [],
     Memories: [],
   };

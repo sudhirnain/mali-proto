@@ -18,6 +18,7 @@ const GROUP_ORDER: CategoryGroup[] = [
   "Growth rate",
   "Health",
   "Mood",
+  "Wellbeing",
   "Pregnancy",
 ];
 
@@ -114,14 +115,24 @@ export default function AddEventPage() {
                     href={`/log/${c.id}`}
                     className="flex flex-col items-center gap-1.5 active:scale-[0.96] transition"
                   >
-                    <div
-                      className="w-14 h-14 rounded-full flex items-center justify-center"
-                      style={{
-                        backgroundColor: `var(--color-${c.color}-soft)`,
-                        color: `var(--color-${c.color})`,
-                      }}
-                    >
-                      <Illustration name={c.iconName} className="w-8 h-8" />
+                    <div className="relative">
+                      <div
+                        className="w-14 h-14 rounded-full flex items-center justify-center"
+                        style={{
+                          backgroundColor: `var(--color-${c.color}-soft)`,
+                          color: `var(--color-${c.color})`,
+                        }}
+                      >
+                        <Illustration name={c.iconName} className="w-8 h-8" />
+                      </div>
+                      {c.forMom && phase === "parenting" && (
+                        <span
+                          className="absolute -top-1 -right-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[var(--color-primary)] text-white ring-2 ring-white leading-none"
+                          aria-label="For mom"
+                        >
+                          Mom
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs font-medium text-neutral-700 text-center leading-tight">
                       {c.label}

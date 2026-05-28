@@ -91,6 +91,9 @@ function CategoryIconBadge({ cat }: { cat: Category }) {
 function FormBody({ cat, editing }: { cat: Category; editing?: Entry }) {
   switch (cat.formKind) {
     case "timer":
+      if (cat.id === "sleep" || cat.id === "sleep-mom") {
+        return <SleepForm cat={cat} editing={editing} />;
+      }
       return <TimerForm cat={cat} editing={editing} />;
     case "measurement":
       return <MeasurementForm cat={cat} editing={editing} />;
@@ -322,6 +325,229 @@ function formatDurationShort(min: number): string {
   const h = Math.floor(min / 60);
   const rem = min % 60;
   return rem === 0 ? `${h} h` : `${h} h ${rem} min`;
+}
+
+/**
+ * Field-first sleep entry (sleep + sleep-mom). Optimized for retro logging
+ * ("baby slept 2pm-3:30pm") over live tracking. Live tracking still works via
+ * the sticky ActiveTimer chip path on other timer categories.
+ */
+function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
+  const defaultEnd = editing?.at ? new Date(editing.at) : new Date();
+  const defaultStart = editing?.durationMin
+    ? new Date(defaultEnd.getTime() - editing.durationMin * 60000)
+    : new Date(defaultEnd.getTime() - 60 * 60000);
+
+  const [start, setStart] = useState<Date>(defaultStart);
+  const [end, setEnd] = useState<Date>(defaultEnd);
+  const [sleepKind, setSleepKind] = useState<"Daytime" | "Night">(inferSleepKind(defaultStart));
+  const [comments, setComments] = useState<string>("");
+  const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
+
+  const save = useSaveEntry(cat, editing);
+  const timer = useActiveTimer();
+  const runningHere = timer.active?.categoryId === cat.id;
+  const runningElsewhere = !!timer.active && !runningHere;
+
+  const fieldDurationMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+  const invalid = !runningHere && end.getTime() <= start.getTime();
+
+  useEffect(() => {
+    if (!runningHere) setSleepKind(inferSleepKind(start));
+  }, [start, runningHere]);
+
+  const applyChip = (key: "just-woke" | "earlier" | "last-night") => {
+    const now = new Date();
+    if (key === "just-woke") {
+      setEnd(now);
+      setStart(new Date(now.getTime() - 60 * 60000));
+    } else if (key === "earlier") {
+      setEnd(new Date(now.getTime() - 2 * 60 * 60000));
+      setStart(new Date(now.getTime() - 4 * 60 * 60000));
+    } else if (key === "last-night") {
+      const s = new Date(now);
+      s.setDate(s.getDate() - 1);
+      s.setHours(21, 30, 0, 0);
+      const e = new Date(now);
+      e.setHours(6, 0, 0, 0);
+      setStart(s);
+      setEnd(e);
+    }
+  };
+
+  const stopLive = () => {
+    if (!timer.active) return;
+    const startedAt = timer.active.startedAt;
+    timer.stop();
+    setStart(new Date(startedAt));
+    setEnd(new Date());
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="text-center">
+        <div
+          className="serif text-4xl font-semibold tabular-nums"
+          style={{ color: runningHere ? "var(--color-cat-sleep)" : undefined }}
+        >
+          {runningHere
+            ? formatTimerLive(timer.elapsedSec)
+            : invalid
+              ? "—"
+              : formatDurationShort(fieldDurationMin)}
+        </div>
+        <div className="text-xs text-neutral-500 mt-1">
+          {runningHere
+            ? "Running — keeps going if you navigate away"
+            : invalid
+              ? "End must be after start"
+              : `${sleepKind} sleep`}
+        </div>
+      </div>
+
+      {!runningHere && (
+        <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
+          {([
+            { k: "just-woke", l: "Just woke up" },
+            { k: "earlier", l: "Earlier today" },
+            { k: "last-night", l: "Last night" },
+          ] as const).map(({ k, l }) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => applyChip(k)}
+              className="shrink-0 text-sm font-medium px-3.5 py-2 rounded-full bg-neutral-100 text-neutral-700 active:bg-neutral-200 transition"
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <Field label="Start">
+        <DateTimeInput
+          value={runningHere && timer.active ? new Date(timer.active.startedAt) : start}
+          onChange={setStart}
+          disabled={runningHere}
+        />
+      </Field>
+      {!runningHere && (
+        <Field label="End">
+          <DateTimeInput value={end} onChange={setEnd} />
+        </Field>
+      )}
+
+      {!runningHere && !runningElsewhere && (
+        <button
+          type="button"
+          onClick={() => timer.start(cat.id)}
+          className="w-full text-sm font-medium px-3.5 py-2.5 rounded-full border border-neutral-200 bg-white text-neutral-700 active:bg-neutral-50 inline-flex items-center justify-center gap-2"
+        >
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: "var(--color-cat-sleep)" }}
+          />
+          Start live timer
+        </button>
+      )}
+      {runningHere && (
+        <button
+          type="button"
+          onClick={stopLive}
+          className="w-full text-sm font-semibold px-3.5 py-2.5 rounded-full border-2 bg-white inline-flex items-center justify-center gap-2"
+          style={{ borderColor: "var(--color-cat-sleep)", color: "var(--color-cat-sleep)" }}
+        >
+          Stop &amp; fill end time
+        </button>
+      )}
+      {runningElsewhere && (
+        <div className="text-xs text-neutral-500 text-center">
+          A {timer.active?.categoryId} timer is running — stop it from the chip to start a sleep timer.
+        </div>
+      )}
+
+      <div className="bg-neutral-50 rounded-full p-1 flex">
+        {(["Daytime", "Night"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setSleepKind(k)}
+            className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${
+              sleepKind === k ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
+            }`}
+          >
+            {k}
+          </button>
+        ))}
+      </div>
+
+      <Field label="Comments (optional)">
+        <textarea
+          rows={2}
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+          placeholder="Anything you want to remember?"
+          className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
+        />
+      </Field>
+
+      <PhotoAttachField photo={photo} onChange={setPhoto} />
+
+      <SaveBar
+        cat={cat}
+        editing={editing}
+        onSave={() => {
+          let finalStart = start;
+          let finalEnd = end;
+          if (runningHere && timer.active) {
+            const startedAt = timer.active.startedAt;
+            timer.stop();
+            finalStart = new Date(startedAt);
+            finalEnd = new Date();
+          }
+          const finalMin = Math.max(1, Math.round((finalEnd.getTime() - finalStart.getTime()) / 60000));
+          const base = `${formatDurationShort(finalMin)}, ${sleepKind}`;
+          const note = comments.trim();
+          save({
+            at: finalEnd.toISOString(),
+            durationMin: finalMin,
+            meta: note ? `${base} — ${note}` : base,
+            photo,
+          });
+        }}
+      />
+    </div>
+  );
+}
+
+function inferSleepKind(d: Date): "Daytime" | "Night" {
+  const h = d.getHours();
+  return h >= 19 || h < 6 ? "Night" : "Daytime";
+}
+
+function DateTimeInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: Date;
+  onChange: (d: Date) => void;
+  disabled?: boolean;
+}) {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const local = `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+  return (
+    <input
+      type="datetime-local"
+      value={local}
+      disabled={disabled}
+      onChange={(e) => {
+        const next = new Date(e.target.value);
+        if (!isNaN(next.getTime())) onChange(next);
+      }}
+      className="w-full text-base text-neutral-900 border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] tabular-nums disabled:bg-neutral-50 disabled:text-neutral-500"
+    />
+  );
 }
 
 function MeasurementForm({ cat, editing }: { cat: Category; editing?: Entry }) {
@@ -625,7 +851,22 @@ function ContractionsForm({ cat }: { cat: Category }) {
   const router = useRouter();
   const [running, setRunning] = useState(true);
   const [logged, setLogged] = useState(0);
+  const [lastStopAt, setLastStopAt] = useState<number | null>(null);
+  const [sinceLast, setSinceLast] = useState(0);
   const [explainerOpen, setExplainerOpen] = useState(false);
+
+  useEffect(() => {
+    if (running || lastStopAt == null) return;
+    const id = setInterval(() => {
+      setSinceLast(Math.floor((Date.now() - lastStopAt) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [running, lastStopAt]);
+
+  const mm = String(Math.floor(sinceLast / 60)).padStart(2, "0");
+  const ss = String(sinceLast % 60).padStart(2, "0");
+  const showSinceLast = !running && lastStopAt != null;
+
   return (
     <div className="space-y-5">
       <div className="text-center">
@@ -635,6 +876,17 @@ function ContractionsForm({ cat }: { cat: Category }) {
         </div>
       </div>
 
+      {showSinceLast && (
+        <div className="text-center">
+          <div className="text-[11px] uppercase tracking-wide text-neutral-500">
+            Time since last contraction
+          </div>
+          <div className="serif text-2xl font-semibold text-neutral-900 tabular-nums mt-0.5">
+            {mm}:{ss}
+          </div>
+        </div>
+      )}
+
       <div className="bg-neutral-50 rounded-2xl p-4 text-center text-sm text-neutral-700">
         Average interval: <span className="font-semibold text-neutral-900">7 min</span> · Last: 50s
       </div>
@@ -642,6 +894,10 @@ function ContractionsForm({ cat }: { cat: Category }) {
       <button
         onClick={() => {
           tinyHaptic();
+          if (running) {
+            setLastStopAt(Date.now());
+            setSinceLast(0);
+          }
           setRunning((r) => !r);
           setLogged((n) => n + 1);
         }}
