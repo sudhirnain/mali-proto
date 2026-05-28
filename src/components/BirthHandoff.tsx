@@ -6,13 +6,33 @@ import { usePhase } from "@/lib/phase";
 import { useMom, useBaby } from "@/lib/cold-mode";
 
 /**
- * Fires a one-time celebration overlay when the user transitions from
- * pregnancy → parenting. This is the moment My Baby structurally can't have
- * — Mali's two-phase journey culminates here. Re-fires every time the
- * transition happens (so demos can replay by toggling phase).
+ * Parses a DD.MM.YYYY string into a Date, or returns null if malformed.
+ */
+function parseEuDate(s: string | undefined): Date | null {
+  if (!s) return null;
+  const m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (!m) return null;
+  return new Date(`${m[3]}-${m[2]}-${m[1]}T12:00:00`);
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Fires the celebration overlay on either of two triggers:
+ *
+ *  1. **Phase transition** pregnancy → parenting (preserved for demos — the
+ *     DemoNavigator's "See the birth handoff" path relies on this).
+ *  2. **Due-date overrun** — slide 54: "Should be triggered during pregnancy
+ *     one day after due date." If today is >=1 day past the stored due date
+ *     and the user is still in pregnancy phase, fire once. (In the demo the
+ *     due date is in the future, so this only matters for real-time users.)
+ *
+ * Re-fires every transition for demos. The X button now dismisses without a
+ * phase change.
  */
 export function BirthHandoff() {
   const { phase } = usePhase();
+  const baby = useBaby();
   const prevPhase = useRef(phase);
   const [open, setOpen] = useState(false);
 
@@ -22,6 +42,15 @@ export function BirthHandoff() {
     }
     prevPhase.current = phase;
   }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "pregnancy") return;
+    const due = parseEuDate(baby.dueDate);
+    if (!due) return;
+    if (Date.now() - due.getTime() >= DAY_MS) {
+      setOpen(true);
+    }
+  }, [phase, baby.dueDate]);
 
   if (!open) return null;
   return <BirthHandoffOverlay onDismiss={() => setOpen(false)} />;
@@ -38,11 +67,26 @@ function BirthHandoffOverlay({ onDismiss }: { onDismiss: () => void }) {
       aria-labelledby="birth-handoff-title"
       className="absolute inset-0 z-[60] flex items-center justify-center px-6 birth-handoff-overlay"
     >
-      {/* Soft coral→teal gradient symbolizing the phase transition itself */}
+      {/* Soft coral→teal gradient symbolizing the phase transition itself.
+       *  Will swap to a coral→cream/deeper-coral gradient once the pink-only
+       *  decision (A1) is locked — currently waiting on Jonas's reply. */}
       <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-coral-softer)] via-white to-[var(--color-teal-softer)]" />
 
       {/* Sprinkled hearts + sparkles backdrop */}
       <SprinkleConfetti />
+
+      {/* X close — slide 54: "Add X." Lets a user dismiss the overlay without
+       *  flipping phase (e.g., if the due-date trigger fires early). */}
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Close"
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/70 backdrop-blur flex items-center justify-center text-neutral-700 shadow-sm active:scale-95 transition"
+      >
+        <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 6l12 12M18 6l-12 12" />
+        </svg>
+      </button>
 
       {/* Centered content */}
       <div className="relative max-w-[300px] text-center">

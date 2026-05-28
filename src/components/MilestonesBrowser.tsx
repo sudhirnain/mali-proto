@@ -25,14 +25,22 @@ type Tab = MilestoneCategory | "All";
 /** Milestone presets browser — rendered as the Milestones tab inside Journal. */
 export function MilestonesBrowser() {
   const [tab, setTab] = useState<Tab>("All");
-  const { milestoneStatus } = useJournalStore();
+  const { milestoneStatus, customMilestones } = useJournalStore();
 
   const isDone = (id: string) => Boolean(milestoneStatus(id).doneAt);
 
+  // Per Jonas email 2026-05-28: custom user-added milestones (id `custom-*`)
+  // appear in the overview alongside presets. Filter chips only filter
+  // presets — custom items always show under "All" (they have no category).
+  const allMilestones = useMemo(
+    () => [...customMilestones, ...MILESTONES],
+    [customMilestones]
+  );
+
   const filtered = useMemo(() => {
-    if (tab === "All") return MILESTONES;
+    if (tab === "All") return allMilestones;
     return MILESTONES.filter((m) => m.category === tab);
-  }, [tab]);
+  }, [tab, allMilestones]);
 
   return (
     <div>

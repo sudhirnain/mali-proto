@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { MOCK_ENTRIES, type Entry } from "./mock-entries";
-import { MILESTONES } from "./mock-milestones";
+import { MILESTONES, type AgeBucket, type Milestone } from "./mock-milestones";
 import { useColdMode } from "./cold-mode";
 
 /**
@@ -29,6 +29,7 @@ export type MilestoneStatus = { doneAt?: string };
 type Slice = {
   entries: Entry[];
   milestones: Map<string, MilestoneStatus>;
+  customMilestones: Milestone[];
 };
 
 function seedLiveMilestones(): Map<string, MilestoneStatus> {
@@ -61,6 +62,20 @@ type Ctx = {
     when: Date | null,
     extra?: { note?: string; photo?: string }
   ) => void;
+  customMilestones: Milestone[];
+  /**
+   * Append a user-added milestone (Jonas email 2026-05-28). The act of adding
+   * = marking it done — the form is "record a moment you reached," not
+   * "define a future goal." Lands in the current bucket, threads into the
+   * journal via setMilestoneDone.
+   */
+  addCustomMilestone: (input: {
+    label: string;
+    bucket: AgeBucket;
+    when: Date;
+    note?: string;
+    photo?: string;
+  }) => void;
 };
 
 const JournalCtx = createContext<Ctx | null>(null);
@@ -69,10 +84,12 @@ export function JournalStoreProvider({ children }: { children: ReactNode }) {
   const [live, setLive] = useState<Slice>(() => ({
     entries: [...MOCK_ENTRIES],
     milestones: seedLiveMilestones(),
+    customMilestones: [],
   }));
   const [cold, setCold] = useState<Slice>(() => ({
     entries: [],
     milestones: new Map(),
+    customMilestones: [],
   }));
 
   const isCold = useColdMode();
@@ -147,14 +164,53 @@ export function JournalStoreProvider({ children }: { children: ReactNode }) {
             ...(extra?.photo ? { photo: extra.photo } : {}),
           };
           return {
+            ...prev,
             entries: [milestoneEntry, ...prev.entries.filter((x) => x.id !== entryId)],
             milestones,
           };
         }
         milestones.delete(id);
         return {
+          ...prev,
           entries: prev.entries.filter((x) => x.id !== entryId),
           milestones,
+          // Also drop any custom-milestone record so undoing a custom one fully removes it.
+          customMilestones: prev.customMilestones.filter((m) => m.id !== id),
+        };
+      });
+    },
+    [setSlice]
+  );
+
+  const addCustomMilestone = useCallback(
+    (input: { label: string; bucket: AgeBucket; when: Date; note?: string; photo?: string }) => {
+      const id = `custom-${input.when.getTime()}`;
+      const ms: Milestone = {
+        id,
+        category: "Cognitive",
+        bucket: input.bucket,
+        label: input.label,
+        description: input.note ?? "",
+        iconName: "milestone",
+        medianAgeMonths: 0,
+        isCustom: true,
+      };
+      setSlice((prev) => {
+        const milestones = new Map(prev.milestones);
+        milestones.set(id, { doneAt: input.when.toISOString() });
+        const meta = input.note ? `${input.label} — ${input.note}` : input.label;
+        const entry: Entry = {
+          id: `milestone:${id}`,
+          categoryId: "milestone",
+          at: input.when.toISOString(),
+          meta,
+          milestoneId: id,
+          ...(input.photo ? { photo: input.photo } : {}),
+        };
+        return {
+          entries: [entry, ...prev.entries.filter((x) => x.id !== entry.id)],
+          milestones,
+          customMilestones: [ms, ...prev.customMilestones.filter((x) => x.id !== id)],
         };
       });
     },
@@ -170,8 +226,10 @@ export function JournalStoreProvider({ children }: { children: ReactNode }) {
       updateEntry,
       milestoneStatus,
       setMilestoneDone,
+      customMilestones: slice.customMilestones,
+      addCustomMilestone,
     }),
-    [slice.entries, getEntry, addEntry, removeEntry, updateEntry, milestoneStatus, setMilestoneDone]
+    [slice.entries, slice.customMilestones, getEntry, addEntry, removeEntry, updateEntry, milestoneStatus, setMilestoneDone, addCustomMilestone]
   );
 
   return <JournalCtx.Provider value={value}>{children}</JournalCtx.Provider>;

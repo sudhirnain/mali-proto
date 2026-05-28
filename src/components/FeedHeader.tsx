@@ -12,8 +12,6 @@ import { JournalPulse } from "./JournalPulse";
 import { MilestoneHero } from "./journal/MilestoneHero";
 import { JourneyHero } from "./journal/JourneyHero";
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
 /**
  * Compact pregnancy quick-log row. Replaces the 3 big QuickLogCards (used
  * in parenting) with 5 MiniLogTiles in a single row — matches the tight
@@ -49,19 +47,24 @@ export function FeedHeader() {
   const quickLogs = defaultQuickLogs(phase);
   const extras = expandedHeaderExtras(phase);
 
-  // Nudge badge: parenting only — surface a "log first thing" reminder on
-  // the first quick-log card if it hasn't been logged in over a week. In
-  // pregnancy the weight-mom CTA now lives in the left side-stat and surfaces
-  // its own "Add weight" empty state, so the badge is no longer needed here.
-  const nudgeBadge = useMemo(() => {
-    if (cold || isPreg) return undefined;
-    const firstId = quickLogs[0];
-    if (!firstId) return undefined;
-    const ownEntries = entries.filter((e) => e.categoryId === firstId);
-    if (ownEntries.length === 0) return 1;
-    const mostRecentMs = Math.max(...ownEntries.map((e) => new Date(e.at).getTime()));
-    return TODAY_DATE.getTime() - mostRecentMs > WEEK_MS ? 1 : undefined;
-  }, [entries, cold, isPreg, quickLogs]);
+  // Per-card "today" counter: per slide 4 annotation, the badge in parenting
+  // is a legitimate counter ("5 feeds today"), not a stale-log nudge. Each
+  // card surfaces its own count of today's entries. Suppressed in cold and in
+  // pregnancy (pregnancy's stale-weight signal moved to the StatStrip left
+  // ring as a red "due" dot).
+  const todayCounts = useMemo(() => {
+    if (cold || isPreg) return {} as Record<string, number>;
+    const today = new Date(TODAY_DATE);
+    today.setHours(0, 0, 0, 0);
+    const map: Record<string, number> = {};
+    for (const e of entries) {
+      const t = new Date(e.at);
+      t.setHours(0, 0, 0, 0);
+      if (t.getTime() !== today.getTime()) continue;
+      map[e.categoryId] = (map[e.categoryId] ?? 0) + 1;
+    }
+    return map;
+  }, [entries, cold, isPreg]);
 
   const bgClass = isPreg ? "bg-[var(--color-primary-bright)]" : "bg-[var(--color-primary-soft)]";
 
@@ -83,7 +86,7 @@ export function FeedHeader() {
             <QuickLogCard
               key={id}
               id={id}
-              badge={id === quickLogs[0] ? nudgeBadge : undefined}
+              badge={todayCounts[id] || undefined}
             />
           ))}
         </div>

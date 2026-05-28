@@ -11,6 +11,8 @@ export type Baby = {
   weekLabel?: string; // pregnancy only
   /** Gestational week number — used to pick the week-appropriate illustration. Pregnancy only. */
   week?: number;
+  /** Due date in DD.MM.YYYY (European) format. Pregnancy only. Editable via the StatStrip right-ring tap. */
+  dueDate?: string;
 };
 
 /**
@@ -28,12 +30,13 @@ export type Mom = {
 export const BABIES: Record<Phase, Baby> = {
   pregnancy: {
     name: "Lu",
-    ageLabel: "Week 32, Day 4",
-    weight: "220 g", // baby's weight in utero
+    ageLabel: "Week 32 · Day 4",
+    weight: "220 g", // baby's weight in utero (estimate, backend-sourced)
     length: "—",
     sizeFruit: "Avocado",
     weekLabel: "Week 32",
     week: 32,
+    dueDate: "24.10.2026",
   },
   parenting: {
     name: "Lu",
@@ -62,6 +65,7 @@ export const FIRST_DAY_BABIES: Record<Phase, Baby> = {
     sizeFruit: "Avocado",
     weekLabel: "Week 24",
     week: 24,
+    dueDate: "12.02.2027",
   },
   parenting: {
     name: "Lu",

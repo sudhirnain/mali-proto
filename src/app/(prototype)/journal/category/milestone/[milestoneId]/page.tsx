@@ -32,8 +32,12 @@ export default function MilestoneDetailPage() {
   const params = useParams<{ milestoneId: string }>();
   const router = useRouter();
   const baby = useBaby();
-  const milestone = getMilestone(params.milestoneId);
-  const { milestoneStatus, setMilestoneDone } = useJournalStore();
+  const { milestoneStatus, setMilestoneDone, customMilestones } = useJournalStore();
+  // Resolve milestone from either the static preset registry or the user's
+  // custom-milestones slice (per Jonas email 2026-05-28).
+  const milestone =
+    getMilestone(params.milestoneId) ??
+    customMilestones.find((m) => m.id === params.milestoneId);
   const entries = useEntries();
   const status = milestone ? milestoneStatus(milestone.id) : {};
   const done = Boolean(status.doneAt);
@@ -310,7 +314,20 @@ function OverviewTab({
 
   return (
     <div className="bg-[var(--color-primary-softer)] rounded-3xl px-6 py-8 flex flex-col items-center text-center">
-      {art ? (
+      {/* Slide 49 comment: "If image was updated, this should be the image of
+       *  the child." The user's photo replaces the line-art illustration
+       *  whenever one is attached to the milestone capture. */}
+      {entryPhoto ? (
+        <div className="relative w-44 h-44 rounded-full overflow-hidden shadow-md border-4 border-white">
+          <Image
+            src={entryPhoto}
+            alt=""
+            fill
+            sizes="176px"
+            className="object-cover"
+          />
+        </div>
+      ) : art ? (
         <div className="relative w-48 h-48 -mb-2">
           <Image src={art} alt="" fill sizes="200px" className="object-contain" />
         </div>
@@ -319,7 +336,7 @@ function OverviewTab({
           <Illustration name={milestone.iconName} className="w-16 h-16" />
         </div>
       )}
-      <div className="serif text-2xl font-semibold text-[var(--color-primary-dark)] mt-2">
+      <div className="serif text-2xl font-semibold text-[var(--color-primary-dark)] mt-4">
         {milestone.label}
       </div>
       {done && doneAt ? (
@@ -328,18 +345,6 @@ function OverviewTab({
           <div className="serif text-xl font-semibold text-neutral-900">
             {formatLongDate(doneAt)}
           </div>
-
-          {entryPhoto && (
-            <div className="relative w-full max-w-[260px] aspect-[3/2] mt-5 rounded-2xl overflow-hidden shadow-sm">
-              <Image
-                src={entryPhoto}
-                alt=""
-                fill
-                sizes="(max-width: 640px) 80vw, 260px"
-                className="object-cover"
-              />
-            </div>
-          )}
 
           {userNote && (
             <p className="serif italic text-[15px] text-neutral-800 mt-4 max-w-xs leading-relaxed">

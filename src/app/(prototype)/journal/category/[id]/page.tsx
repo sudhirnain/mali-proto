@@ -11,10 +11,11 @@ import { EmptyState } from "@/components/EmptyState";
 import { Illustration } from "@/components/Illustration";
 import { isSameDay } from "@/lib/format";
 import { MilestonesBrowser } from "@/components/MilestonesBrowser";
-import { PrimaryFAB } from "@/components/PrimaryFAB";
 import { categoryArt } from "@/lib/category-art";
 import { useBaby } from "@/lib/cold-mode";
 import { MILESTONES, currentMilestoneBucket } from "@/lib/mock-milestones";
+import { CustomMilestoneSheet } from "@/components/CustomMilestoneSheet";
+import { useState } from "react";
 import Image from "next/image";
 
 const PATTERN_CATEGORIES = new Set(["nursing", "sleep", "diaper", "bottle", "pumping"]);
@@ -169,12 +170,17 @@ export default function CategoryDetailPage() {
 
 function MilestonePage() {
   const router = useRouter();
-  const { milestoneStatus } = useJournalStore();
+  const { milestoneStatus, customMilestones } = useJournalStore();
   const baby = useBaby();
   const bucket = currentMilestoneBucket(baby.ageLabel);
+  const [addOpen, setAddOpen] = useState(false);
 
-  const allDone = MILESTONES.filter((m) => milestoneStatus(m.id).doneAt);
-  const pct = Math.round((allDone.length / MILESTONES.length) * 100);
+  // Progress counts include user-added milestones (always complete by definition).
+  const totalCount = MILESTONES.length + customMilestones.length;
+  const presetDone = MILESTONES.filter((m) => milestoneStatus(m.id).doneAt).length;
+  const customDone = customMilestones.length;
+  const doneCount = presetDone + customDone;
+  const pct = Math.round((doneCount / totalCount) * 100);
 
   const nextInBucket = MILESTONES
     .filter((m) => m.bucket === bucket && !milestoneStatus(m.id).doneAt)
@@ -199,7 +205,7 @@ function MilestonePage() {
 
         <div className="px-2 mt-3">
           <div className="serif text-[26px] font-semibold text-neutral-900 leading-tight">
-            {allDone.length} of {MILESTONES.length} reached
+            {doneCount} of {totalCount} reached
           </div>
           <div className="text-xs text-neutral-700 mt-1">
             {pct}% through {baby.name}&rsquo;s 0–12 month milestones
@@ -223,7 +229,27 @@ function MilestonePage() {
       </header>
 
       <MilestonesBrowser />
-      <PrimaryFAB />
+
+      {/* Custom-milestone add affordance. Replaces PrimaryFAB on this page —
+       *  Jonas email 2026-05-28: tap + → date / image / title / notes form,
+       *  saved as a checked tile in the overview. */}
+      <button
+        type="button"
+        onClick={() => setAddOpen(true)}
+        aria-label="Add custom milestone"
+        className="fixed bottom-20 right-5 z-40 w-14 h-14 rounded-full bg-[var(--color-primary)] text-white shadow-lg flex items-center justify-center active:scale-95 transition md:absolute md:right-5"
+      >
+        <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
+
+      {addOpen && (
+        <CustomMilestoneSheet
+          bucket={bucket}
+          onClose={() => setAddOpen(false)}
+        />
+      )}
     </div>
   );
 }

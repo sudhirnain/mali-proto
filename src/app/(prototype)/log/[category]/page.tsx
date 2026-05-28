@@ -429,6 +429,9 @@ function KicksForm({ cat }: { cat: Category }) {
   const goal = 10;
   const save = useSaveEntry(cat);
   const router = useRouter();
+  const reached = count >= goal;
+  const elapsedMin = Math.max(1, Math.round((Date.now() - startedAt) / 60_000));
+
   return (
     <div className="space-y-5 text-center">
       <div>
@@ -441,10 +444,11 @@ function KicksForm({ cat }: { cat: Category }) {
           tinyHaptic();
           setCount((c) => Math.min(c + 1, goal));
         }}
-        className="w-32 h-32 mx-auto rounded-full text-white font-semibold text-base shadow-lg active:scale-95 transition"
+        disabled={reached}
+        className="w-32 h-32 mx-auto rounded-full text-white font-semibold text-base shadow-lg active:scale-95 transition disabled:opacity-60 disabled:active:scale-100"
         style={{ backgroundColor: "var(--color-cat-kicks)" }}
       >
-        Tap for a kick
+        {reached ? "Reached!" : "Tap for a kick"}
       </button>
 
       <div className="text-xs text-neutral-500">Last session: {MOCK_KICK_SESSIONS[0].kicks} kicks, {MOCK_KICK_SESSIONS[0].durationMin} min</div>
@@ -455,11 +459,71 @@ function KicksForm({ cat }: { cat: Category }) {
             router.back();
             return;
           }
-          const elapsedMin = Math.max(1, Math.round((Date.now() - startedAt) / 60_000));
-          // useSaveEntry navigates back after addEntry, so no explicit back here.
           save({ meta: `${count} kicks, ${elapsedMin} min`, durationMin: elapsedMin });
         }}
       />
+
+      {/* Slide 17 comment: "Can we add positive feedback upon completion?"
+       *  Celebration overlay when the 10-kick goal is reached — copy lifted
+       *  from the slide. Tapping Save triggers the same save() as DoneBar. */}
+      {reached && (
+        <KickCelebration
+          count={count}
+          minutes={elapsedMin}
+          onSave={() =>
+            save({ meta: `${count} kicks, ${elapsedMin} min`, durationMin: elapsedMin })
+          }
+          onClose={() => setCount(goal - 1)}
+        />
+      )}
+    </div>
+  );
+}
+
+function KickCelebration({
+  count,
+  minutes,
+  onSave,
+  onClose,
+}: {
+  count: number;
+  minutes: number;
+  onSave: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
+      <div className="bg-white rounded-3xl max-w-sm w-full p-7 text-center shadow-2xl relative">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-neutral-400"
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 6l12 12M18 6l-12 12" />
+          </svg>
+        </button>
+
+        <div className="text-5xl mb-3" aria-hidden>🎉</div>
+        <div className="serif text-2xl font-semibold text-neutral-900 mb-1">Great!</div>
+        <p className="text-sm text-neutral-700 leading-relaxed">
+          You felt{" "}
+          <span className="font-semibold text-neutral-900">{count} movements</span> in{" "}
+          <span className="font-semibold text-neutral-900">{minutes} minutes</span>.
+        </p>
+        <p className="text-xs text-neutral-500 mt-3 leading-relaxed">
+          Healthy babies move at least 10 times in two hours. Yours is doing great.
+        </p>
+        <button
+          type="button"
+          onClick={onSave}
+          className="w-full mt-6 py-3 rounded-full text-white font-semibold text-base"
+          style={{ backgroundColor: "var(--color-cat-kicks)" }}
+        >
+          Save session
+        </button>
+      </div>
     </div>
   );
 }
@@ -469,6 +533,7 @@ function ContractionsForm({ cat }: { cat: Category }) {
   const router = useRouter();
   const [running, setRunning] = useState(true);
   const [logged, setLogged] = useState(0);
+  const [explainerOpen, setExplainerOpen] = useState(false);
   return (
     <div className="space-y-5">
       <div className="text-center">
@@ -497,6 +562,27 @@ function ContractionsForm({ cat }: { cat: Category }) {
       <div className="text-xs text-neutral-500 text-center">
         {MOCK_CONTRACTIONS.length + logged} contractions logged today
       </div>
+
+      {/* Slide 18 comment: "Note that this is relevant. Pls show somewhere." —
+       *  surface the true-contractions explainer as a collapsible panel. */}
+      <button
+        type="button"
+        onClick={() => setExplainerOpen((v) => !v)}
+        className="w-full flex items-center justify-between text-left rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-[13px] font-semibold text-neutral-800 active:bg-neutral-50 transition"
+        aria-expanded={explainerOpen}
+      >
+        <span>What&rsquo;s a true contraction?</span>
+        <svg viewBox="0 0 24 24" className={`w-4 h-4 transition-transform ${explainerOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {explainerOpen && (
+        <p className="text-[13px] text-neutral-700 leading-relaxed -mt-2 px-1">
+          True contractions indicate the onset of labor. They increase in
+          frequency until they are 5 minutes apart or reach 12 contractions
+          per hour.
+        </p>
+      )}
 
       <DoneBar
         onDone={() => {

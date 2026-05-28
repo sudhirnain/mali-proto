@@ -10,7 +10,7 @@ import { MemoryThread } from "@/components/MemoryThread";
 import { usePhase } from "@/lib/phase";
 import { useEntries } from "@/lib/journal-store";
 import { categoriesForPhase } from "@/lib/categories";
-import { MOCK_QUOTE, MOCK_FEED_TIP, MOCK_FEED_QUESTION } from "@/lib/mock-quote";
+import { quoteForPhase, MOCK_FEED_TIP, MOCK_FEED_QUESTION } from "@/lib/mock-quote";
 
 /**
  * The home tab.
@@ -27,6 +27,7 @@ import { MOCK_QUOTE, MOCK_FEED_TIP, MOCK_FEED_QUESTION } from "@/lib/mock-quote"
 export default function FeedPage() {
   const { phase } = usePhase();
   const entries = useEntries();
+  const quote = quoteForPhase(phase);
 
   // Cold state when this phase has no entries at all
   const phaseHasEntries = useMemo(() => {
@@ -115,10 +116,10 @@ export default function FeedPage() {
             "
           </div>
           <p className="serif text-lg leading-relaxed text-neutral-800 italic px-2 -mt-6">
-            {MOCK_QUOTE.text}
+            {quote.text}
           </p>
           <p className="text-xs tracking-wide text-neutral-500 mt-5 uppercase">
-            -- {MOCK_QUOTE.author}
+            -- {quote.author}
           </p>
           <div className="flex items-center justify-center gap-4 mt-4 text-xs text-neutral-500">
             <span className="inline-flex items-center gap-1">

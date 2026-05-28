@@ -13,6 +13,8 @@ export type Milestone = {
   /** Where the median baby falls on the completion curve, in months (used to position the chart marker). */
   medianAgeMonths: number;
   done?: boolean;
+  /** True for user-added milestones (Jonas email 2026-05-28). They land in the current bucket and are checked-on-add. */
+  isCustom?: boolean;
 };
 
 /**
