@@ -5,7 +5,6 @@ import { useMemo } from "react";
 import { FeedHeader } from "@/components/FeedHeader";
 import { PrimaryFAB } from "@/components/PrimaryFAB";
 import { WelcomeCard } from "@/components/WelcomeCard";
-import { MyWeekCard } from "@/components/MyWeekCard";
 import { MemoryThread } from "@/components/MemoryThread";
 import { usePhase } from "@/lib/phase";
 import { useEntries } from "@/lib/journal-store";
@@ -47,11 +46,9 @@ export default function FeedPage() {
         </section>
       )}
 
-      {/* Mom-first content lead — pregnancy only. Lands the philosophy:
-       *  pregnant users get content about themselves, not about the baby.
-       *  Stats and milestone progress live in the FeedHeader (StatStrip
-       *  values tap → chart; MilestoneHero behind chevron). */}
-      {phase === "pregnancy" && <MyWeekCard />}
+      {/* MyWeekCard removed per slide 4 comment "We don't need the Weekly
+       *  Update" — the weekly watercolor migrated into the StatStrip center
+       *  hero (A5d), making the standalone content card redundant. */}
 
       {/* Memory thread — anniversary memories resurfaced. Renders only when
        *  an anniversary entry exists (7 / 14 / 30 / 90 / 365 days ago). */}
