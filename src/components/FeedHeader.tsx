@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { usePhase } from "@/lib/phase";
 import { useColdMode, useBaby } from "@/lib/cold-mode";
 import { defaultQuickLogs, expandedHeaderExtras } from "@/lib/categories";
 import { useEntries } from "@/lib/journal-store";
 import { TODAY_DATE } from "@/lib/mock-entries";
-import { useScrolledPast } from "@/lib/scroll";
+import { useScrollY } from "@/lib/scroll";
 import { StatStrip } from "./StatStrip";
 import { QuickLogCard, MiniLogTile } from "./QuickLogCard";
 import { JournalPulse } from "./JournalPulse";
@@ -14,15 +15,12 @@ import { MilestoneHero } from "./journal/MilestoneHero";
 import { JourneyHero } from "./journal/JourneyHero";
 
 /**
- * Compact pregnancy quick-log row. Replaces the 3 big QuickLogCards (used
- * in parenting) with 5 MiniLogTiles in a single row — matches the tight
- * pregnancy header Jonas mocked. weight-mom moves out of this row (it's now
- * the left side-stat above), so this row is the full mom-experience tracker
- * set: symptoms · hydration · sleep · contractions · mood.
+ * Compact pregnancy quick-log row. 4 MiniLogTiles. Dropped hydration to
+ * give each tile more width (labels no longer wrap). Water remains reachable
+ * via /log/hydration and Moments → Wellbeing.
  */
 const PREGNANCY_COMPACT_TILES = [
   "symptoms",
-  "hydration",
   "sleep-mom",
   "contractions",
   "mom-mood",
@@ -44,10 +42,13 @@ export function FeedHeader() {
   const entries = useEntries();
   const baby = useBaby();
   const [expanded, setExpanded] = useState(false);
-  // Slide 9: when scrolled, the header collapses to a single floating pill
-  // ("Week N day D"). Threshold tuned to roughly hide once the StatStrip is
-  // off-screen.
-  const scrolled = useScrolledPast(180);
+  // Slide 8 — 3-state scroll transition. scrollY drives two stacked pills
+  // that cross-fade based on position:
+  //   0 → 40px   nothing (full header is the show)
+  //   40 → 180px size-of explainer fades in/out
+  //   180+ px    "Week N · Day D" compact pill takes over
+  // See ScrollPills below.
+  const scrollY = useScrollY();
 
   const isPreg = phase === "pregnancy";
   const quickLogs = defaultQuickLogs(phase);
@@ -76,25 +77,28 @@ export function FeedHeader() {
 
   return (
     <section className={`${bgClass} relative md:pt-11`}>
-      {/* Slide 9 — collapsed scroll pill. Floats fixed at the top of the
-       *  phone shell when the user has scrolled past the StatStrip; tapping
-       *  scrolls back to the top to re-reveal the full header. */}
-      {isPreg && scrolled && (
-        <button
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed top-2 md:top-11 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur shadow-md text-[12px] font-semibold text-neutral-900 active:scale-95 transition"
-        >
-          {baby.ageLabel ?? `Week ${baby.week ?? "—"}`}
-        </button>
+      {/* Slide 8 — single floating pill that morphs between two phases as
+       *  the user scrolls past the StatStrip:
+       *   1. "Lu is the size of an avocado"  (the fruit explainer)
+       *   2. "Week 32 · Day 4"               (the at-a-glance anchor)
+       *  No in-place morph inside the StatStrip — that approach overlapped the
+       *  watercolor visually. */}
+      {isPreg && (
+        <ScrollPills
+          scrollY={scrollY}
+          ageLabel={baby.ageLabel}
+          babyName={baby.name}
+          sizeFruit={baby.sizeFruit}
+          week={baby.week}
+        />
       )}
 
       <StatStrip />
 
-      {/* Quick-log row — pregnancy uses 5 mini tiles (tighter, all mom-experience
-       *  trackers visible at once); parenting keeps the 3 big QuickLogCards.   */}
+      {/* Quick-log row — pregnancy uses 4 mini tiles (tighter, daily
+       *  mom-experience trackers); parenting keeps the 3 big QuickLogCards.   */}
       {isPreg ? (
-        <div className="px-4 grid grid-cols-5 gap-2">
+        <div className="px-4 grid grid-cols-4 gap-2">
           {PREGNANCY_COMPACT_TILES.map((id) => (
             <MiniLogTile key={id} id={id} />
           ))}
@@ -156,5 +160,92 @@ export function FeedHeader() {
         </button>
       </div>
     </section>
+  );
+}
+
+function rampOpacity(y: number, inStart: number, inEnd: number, outStart: number, outEnd: number): number {
+  if (y < inStart) return 0;
+  if (y < inEnd) return (y - inStart) / (inEnd - inStart);
+  if (y < outStart) return 1;
+  if (y < outEnd) return 1 - (y - outStart) / (outEnd - outStart);
+  return 0;
+}
+
+function articleFor(word: string | undefined): string {
+  if (!word) return "a";
+  return /^[aeiou]/i.test(word) ? "an" : "a";
+}
+
+/**
+ * Slide 8 — single floating pill anchored to the top of the phone shell.
+ * Morphs through two phases as the user scrolls. Both phases share the same
+ * fixed anchor so the morph reads as one element changing content.
+ *
+ *  scrollY ranges (tuned for the actual StatStrip + quick-logs height):
+ *
+ *   0   – 120  hidden (header still visible, no need)
+ *   120 – 180  "Lu is the size of an avocado" fades in
+ *   180 – 360  holds at full opacity
+ *   360 – 420  cross-fade to "Week 32 · Day 4"
+ *   420 +      "Week 32 · Day 4" holds, tappable → scroll back to top
+ */
+function ScrollPills({
+  scrollY,
+  ageLabel,
+  babyName,
+  sizeFruit,
+  week,
+}: {
+  scrollY: number;
+  ageLabel: string;
+  babyName: string;
+  sizeFruit?: string;
+  week?: number;
+}) {
+  const sizeOpacity = rampOpacity(scrollY, 120, 180, 360, 420);
+  const weekOpacity = rampOpacity(scrollY, 360, 420, Infinity, Infinity);
+  if (sizeOpacity <= 0 && weekOpacity <= 0) return null;
+
+  const weekArt = week ? `/mali-art/weekly/w${week}.png` : null;
+
+  return (
+    <>
+      {sizeOpacity > 0 && sizeFruit && (
+        <div
+          aria-hidden
+          style={{ opacity: sizeOpacity }}
+          className="fixed top-2 md:top-[80px] left-1/2 -translate-x-1/2 z-40 pl-1 pr-4 py-1 rounded-full bg-white/95 backdrop-blur shadow-md text-[12px] font-medium text-neutral-700 pointer-events-none whitespace-nowrap flex items-center gap-2"
+        >
+          {weekArt && (
+            <span className="relative w-7 h-7 rounded-full overflow-hidden bg-[var(--color-primary-softer)] shrink-0">
+              <Image
+                src={weekArt}
+                alt=""
+                fill
+                sizes="28px"
+                className="object-cover"
+              />
+            </span>
+          )}
+          <span>
+            <span className="font-semibold text-neutral-900">{babyName}</span> is the size of {articleFor(sizeFruit)} {sizeFruit.toLowerCase()}
+          </span>
+        </div>
+      )}
+      {weekOpacity > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            const el = document.getElementById("phone-scroll");
+            (el ?? window).scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          style={{ opacity: weekOpacity }}
+          className="fixed top-2 md:top-[80px] left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur shadow-md text-[12px] font-semibold text-neutral-900 active:scale-95 transition-transform whitespace-nowrap"
+          aria-label="Scroll back to top"
+        >
+          {ageLabel}
+        </button>
+      )}
+    </>
   );
 }

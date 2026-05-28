@@ -10,7 +10,7 @@ export default function PrototypeLayout({ children }: { children: React.ReactNod
       <JournalStoreProvider>
         <ActiveTimerProvider>
           <MobileFrame>
-            <main className="flex-1 overflow-y-auto">{children}</main>
+            <main id="phone-scroll" className="flex-1 overflow-y-auto">{children}</main>
             <BottomTabBar />
           </MobileFrame>
         </ActiveTimerProvider>

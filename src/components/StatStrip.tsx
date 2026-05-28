@@ -9,24 +9,16 @@ import { useEntries } from "@/lib/journal-store";
 import { Illustration } from "./Illustration";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function parseEuDate(s: string | undefined): Date | null {
-  if (!s) return null;
-  const m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-  if (!m) return null;
-  return new Date(`${m[3]}-${m[2]}-${m[1]}T12:00:00`);
-}
 
 /**
  * Top stats row of the header.
  *
  * Parenting (baby-first): Length | Lu photo + age | Weight
- * Pregnancy (mom-first):  Your weight | weekly watercolor + Sarah + ageLabel | Due date (with est. baby weight subline)
+ * Pregnancy (mom-first):  Your weight | weekly watercolor + Sarah + ageLabel | Baby weight (estimate)
  *
- * Right ring in pregnancy shows the due date as primary surface (per slide 4
- * "could link to due date"); the backend-sourced baby weight estimate appears
- * as a small caption below. Baby weight is NOT user-editable per transcript.
+ * Right stat in pregnancy = the backend-sourced baby-weight estimate (not
+ * user-editable per A5c). Days-countdown + due-date editing live in
+ * JourneyHero (slide 6 layout: "Due date YYYY →" row inside the expanded card).
  */
 export function StatStrip() {
   const { phase } = usePhase();
@@ -37,7 +29,6 @@ export function StatStrip() {
 
 function ParentingStatStrip() {
   const baby = useBaby();
-  const cold = useColdMode();
 
   return (
     <div className="px-4 pt-3 pb-4">
@@ -52,7 +43,7 @@ function ParentingStatStrip() {
 
         <CenterHero
           imageSrc="/mali-illustrations/happy_hands_up_baby.png"
-          welcome={cold ? `Welcome, ${baby.name}` : baby.name}
+          welcome={baby.name}
           subline={baby.ageLabel}
         />
 
@@ -74,8 +65,6 @@ function PregnancyStatStrip() {
   const cold = useColdMode();
   const entries = useEntries();
   const week = baby.week ?? 20;
-  const [dueDate, setDueDate] = useState(baby.dueDate ?? "24.10.2026");
-  const [editingDueDate, setEditingDueDate] = useState(false);
 
   const momWeight = useMemo(() => {
     const ws = entries
@@ -84,14 +73,15 @@ function PregnancyStatStrip() {
     return ws[0]?.meta ?? mom.weight;
   }, [entries, mom.weight]);
 
-  // Stale-weight signal — a small red "due" dot on the left side-stat when the
-  // user hasn't logged mom-weight in over a week (or never has). Replaces the
-  // numeric "1" badge per slide 4 annotation: in pregnancy, the badge "would
-  // only apply to weight … maybe it's just a dot."
+  // Stale-weight signal — small red dot on the left side-stat when the user
+  // HAS logged mom-weight before but the latest entry is >7d old. We don't
+  // fire the dot when there are zero entries: in that case the SideStat's
+  // own "Add weight" empty CTA already conveys it, and showing a dot
+  // alongside a fallback "68 kg" value reads contradictory.
   const weightDue = useMemo(() => {
     if (cold) return false;
     const ws = entries.filter((e) => e.categoryId === "weight-mom");
-    if (ws.length === 0) return true;
+    if (ws.length === 0) return false;
     const mostRecent = Math.max(...ws.map((e) => new Date(e.at).getTime()));
     return Date.now() - mostRecent > WEEK_MS;
   }, [entries, cold]);
@@ -101,14 +91,6 @@ function PregnancyStatStrip() {
   // illustration falls back via the onError handler if the weekly art is
   // missing for that week.
   const weekArt = `/mali-art/weekly/w${week}.png`;
-
-  // Days remaining until the due date. Used by the right progress-ring stat.
-  // Falls back to a week-based estimate if dueDate is unparseable.
-  const daysToDue = useMemo(() => {
-    const due = parseEuDate(dueDate);
-    if (!due) return Math.max(0, (40 - week) * 7);
-    return Math.max(0, Math.ceil((due.getTime() - Date.now()) / DAY_MS));
-  }, [dueDate, week]);
 
   return (
     <div className="px-4 pt-2 pb-3">
@@ -123,35 +105,31 @@ function PregnancyStatStrip() {
           dueDot={weightDue}
         />
 
+        {/* Slide 4: "Needs to be the baby name" — pregnancy center reads Lu
+         *  (baby), matching the floating size-of pill that morphs into the
+         *  week pill on scroll. Mom-first lives in the side stats + quick-logs.
+         *  Cold-state greeting ("Welcome, Sarah") lives in the WelcomeCard
+         *  in the feed body, not here — Lu is in utero, not a user. */}
         <CenterHero
           imageSrc={weekArt}
           imageFallback="/mali-illustrations/pregnant_9.png"
-          welcome={cold ? `Welcome, ${mom.name}` : mom.name}
+          welcome={baby.name}
           subline={baby.ageLabel}
         />
 
-        {/* Right — progress ring + days countdown. Slide 4 said "countdown
-         *  OR baby weight"; we picked countdown. The ring fills as % through
-         *  pregnancy (week / 40); the big number is days until due. Tap
-         *  opens the change-due-date sheet (per A5b). Baby weight is
-         *  backend-sourced and lives off the header now. */}
-        <ProgressRingStat
-          days={daysToDue}
-          pct={Math.min(100, Math.round((week / 40) * 100))}
-          onTap={() => setEditingDueDate(true)}
+        {/* Right — baby weight readout (backend-sourced estimate). Mirrors
+         *  the left mom-weight stat so the strip reads Mom · Sarah · Baby.
+         *  Per A5c the value is not user-editable — tapping goes to the
+         *  baby-growth context (Moments → Your journey). Days countdown +
+         *  due-date editing live in JourneyHero. */}
+        <SideStat
+          buttonAria="Baby weight"
+          buttonIcon={<Illustration name="newborn" className="w-6 h-6" />}
+          value={baby.weight}
+          caption="Baby's weight"
+          href="/journal/moments"
         />
       </div>
-
-      {editingDueDate && (
-        <DueDateSheet
-          value={dueDate}
-          onSave={(next) => {
-            setDueDate(next);
-            setEditingDueDate(false);
-          }}
-          onClose={() => setEditingDueDate(false)}
-        />
-      )}
     </div>
   );
 }
@@ -236,11 +214,19 @@ function SideStat({
           <div className="text-xs text-neutral-700 -mt-0.5">{caption}</div>
         </>
       ) : emptyCta ? (
-        <div className="text-[11px] font-semibold text-[var(--color-primary-dark)] mt-1 underline decoration-dotted underline-offset-2 text-center leading-tight">
+        <div className="text-xs font-semibold text-[var(--color-primary-dark)] mt-1 underline decoration-dotted underline-offset-2 text-center leading-tight">
           {emptyCta.label} →
         </div>
       ) : (
-        <div className="h-[26px]" aria-hidden />
+        // No value, no CTA (e.g. cold pregnancy baby-weight — backend-sourced
+        // and not user-actionable). Show em-dash placeholder so the layout
+        // structure matches the populated state: ring + value + caption.
+        <>
+          <div className="text-xs font-semibold text-neutral-400 leading-tight mt-1 tabular-nums">
+            —
+          </div>
+          <div className="text-xs text-neutral-700 -mt-0.5">{caption}</div>
+        </>
       )}
     </>
   );
@@ -258,142 +244,4 @@ function SideStat({
   return <div className={wrapperClass}>{body}</div>;
 }
 
-/**
- * Right side-stat for pregnancy: progress ring with days-countdown.
- * Slide 4 spec: "Change to countdown or baby weight" — we picked countdown.
- * The ring fills as % through pregnancy; the big number is days remaining.
- * Tap opens the DueDateSheet (the only edit affordance — baby weight is
- * backend-sourced).
- */
-function ProgressRingStat({
-  days,
-  pct,
-  onTap,
-}: {
-  days: number;
-  pct: number;
-  onTap: () => void;
-}) {
-  const SIZE = 48;
-  const STROKE = 4;
-  const R = (SIZE - STROKE) / 2;
-  const C = 2 * Math.PI * R;
-  const offset = C * (1 - Math.max(0, Math.min(100, pct)) / 100);
 
-  return (
-    <button
-      type="button"
-      onClick={onTap}
-      className="flex flex-col items-center gap-1 min-h-[84px] active:scale-[0.98] transition"
-      aria-label="Change due date"
-    >
-      <div className="relative w-12 h-12">
-        <svg
-          viewBox={`0 0 ${SIZE} ${SIZE}`}
-          className="w-full h-full -rotate-90"
-          aria-hidden
-        >
-          {/* track */}
-          <circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={R}
-            stroke="var(--color-primary)"
-            strokeOpacity={0.2}
-            strokeWidth={STROKE}
-            fill="none"
-          />
-          {/* progress */}
-          <circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={R}
-            stroke="var(--color-primary)"
-            strokeWidth={STROKE}
-            fill="none"
-            strokeDasharray={C}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-          <span className="text-[15px] font-semibold text-neutral-900 tabular-nums">
-            {days}
-          </span>
-        </div>
-      </div>
-      <div className="text-xs font-semibold text-neutral-900 leading-tight mt-1">
-        {days === 1 ? "day" : "days"}
-      </div>
-      <div className="text-xs text-neutral-700 -mt-0.5">til birth</div>
-    </button>
-  );
-}
-
-/**
- * Lightweight bottom sheet for editing the due date. Accepts a DD.MM.YYYY
- * string, lets the user pick a new date via the native date input, and
- * formats it back to the same shape. No persistence beyond local state in
- * the prototype — wired through the parent useState above.
- */
-function DueDateSheet({
-  value,
-  onSave,
-  onClose,
-}: {
-  value: string;
-  onSave: (next: string) => void;
-  onClose: () => void;
-}) {
-  const iso = useMemo(() => {
-    const m = value.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-    if (!m) return "";
-    return `${m[3]}-${m[2]}-${m[1]}`;
-  }, [value]);
-  const [next, setNext] = useState(iso);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center bg-black/30">
-      <div
-        className="absolute inset-0"
-        onClick={onClose}
-        role="presentation"
-      />
-      <div className="relative bg-white rounded-t-3xl md:rounded-3xl w-full md:max-w-sm px-5 pt-5 pb-7 shadow-xl">
-        <div className="serif text-[19px] font-semibold text-neutral-900 mb-1">
-          Change due date
-        </div>
-        <p className="text-xs text-neutral-500 mb-4">
-          Your provider may revise this after an ultrasound. Updating it here
-          adjusts your week count.
-        </p>
-        <input
-          type="date"
-          value={next}
-          onChange={(e) => setNext(e.target.value)}
-          className="w-full text-base border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)]"
-        />
-        <div className="flex gap-3 mt-5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-3 rounded-full bg-neutral-100 text-neutral-700 font-semibold text-sm active:scale-[0.98] transition"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!next) return onClose();
-              const [y, m, d] = next.split("-");
-              onSave(`${d}.${m}.${y}`);
-            }}
-            className="flex-1 py-3 rounded-full bg-[var(--color-primary)] text-white font-semibold text-sm active:scale-[0.98] transition"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -31,9 +31,11 @@ export function JournalPulse() {
   }, [entries, phase]);
 
   if (todayCount === 0 && !last) {
+    // Cold state — same pill container as populated for visual consistency,
+    // just non-tappable copy. No arrow because there's nothing to navigate to.
     return (
-      <div className="px-4 mt-4 flex items-center justify-between text-[12px] text-neutral-700/90">
-        <span className="font-medium">Start your journal — tap a card above</span>
+      <div className="mx-4 mt-4 flex items-center justify-between gap-2 px-3 py-2 rounded-full bg-white/60 backdrop-blur text-[12px] font-medium text-neutral-700">
+        <span>Start your journal — tap a card above</span>
       </div>
     );
   }

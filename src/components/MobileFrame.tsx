@@ -39,7 +39,9 @@ export function MobileFrame({ children }: { children: ReactNode }) {
           </div>
           {/* Content area: no top padding here. Each page owns its status-bar
            *  clearance — tinted-top pages bleed up to top:0 (status bar over
-           *  their tint), white-top pages add md:pt-11. */}
+           *  their tint), white-top pages add md:pt-11. The actual scroll
+           *  container is `<main className="flex-1 overflow-y-auto" id="phone-scroll">`
+           *  in src/app/(prototype)/layout.tsx — scroll hooks target that id. */}
           <div className="md:h-[844px] flex flex-col h-dvh">
             {children}
           </div>

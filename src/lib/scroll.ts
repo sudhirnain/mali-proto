@@ -3,43 +3,80 @@
 import { useEffect, useState } from "react";
 
 /**
- * Returns true when the document (or its scroll container) has scrolled past
- * the given threshold. Subscribes to window scroll — the inner content of
- * the MobileFrame scrolls window on mobile; on desktop the device shell is
- * fixed height so the same listener still triggers as the user scrolls the
- * outer page.
+ * The MobileFrame mounts the scroll container with `id="phone-scroll"` on
+ * desktop (so content scrolls inside the 844px shell, not the page).
+ * On mobile there's no shell and the body scrolls. These hooks listen on
+ * #phone-scroll if it exists, otherwise fall back to window.
  */
+function getScrollSource(): HTMLElement | Window {
+  if (typeof document === "undefined") return window;
+  return document.getElementById("phone-scroll") ?? window;
+}
+
+function getScrollTop(source: HTMLElement | Window): number {
+  return source instanceof Window ? source.scrollY : source.scrollTop;
+}
+
 export function useScrolledPast(threshold: number): boolean {
   const [past, setPast] = useState(false);
   useEffect(() => {
-    const onScroll = () => setPast(window.scrollY > threshold);
+    const source = getScrollSource();
+    const onScroll = () => setPast(getScrollTop(source) > threshold);
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    source.addEventListener("scroll", onScroll, { passive: true });
+    return () => source.removeEventListener("scroll", onScroll);
   }, [threshold]);
   return past;
 }
 
 /**
- * Reports whether the user is currently scrolling DOWN past a small
- * threshold — used to hide the FAB while a user is reading content. Returns
- * to false when scrolling up or coming to rest above the threshold.
+ * Live scrollY value, throttled to one update per animation frame so consumers
+ * can compute opacity / transform ramps from raw scroll position without
+ * thrashing React. Used by the FeedHeader to cross-fade the size-of tooltip
+ * pill with the compact "Week N" pill across a scrollY range.
  */
-export function useScrollingDown(): boolean {
-  const [down, setDown] = useState(false);
+export function useScrollY(): number {
+  const [y, setY] = useState(0);
   useEffect(() => {
-    let lastY = window.scrollY;
+    const source = getScrollSource();
+    let frame = 0;
     const onScroll = () => {
-      const y = window.scrollY;
-      const delta = y - lastY;
-      // Only flip on meaningful movement to avoid jitter.
-      if (Math.abs(delta) < 4) return;
-      if (delta > 0 && y > 80) setDown(true);
-      else if (delta < 0) setDown(false);
-      lastY = y;
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setY(getScrollTop(source));
+      });
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    onScroll();
+    source.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      source.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
-  return down;
+  return y;
+}
+
+/**
+ * Reports "scrolling" while scroll events are firing and "rest" after
+ * `idleMs` of no movement. Used by the FAB to dim + shrink while the user
+ * is reading, then expand back to full opacity when they stop.
+ */
+export function useScrollIdleState(idleMs: number = 500): "rest" | "scrolling" {
+  const [state, setState] = useState<"rest" | "scrolling">("rest");
+  useEffect(() => {
+    const source = getScrollSource();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onScroll = () => {
+      setState("scrolling");
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setState("rest"), idleMs);
+    };
+    source.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      source.removeEventListener("scroll", onScroll);
+      if (timer) clearTimeout(timer);
+    };
+  }, [idleMs]);
+  return state;
 }

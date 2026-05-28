@@ -37,11 +37,14 @@ const DAY = 24 * 60;
 const HOUR = 60;
 export const MOCK_ENTRIES: Entry[] = [
   // Today (May 19, anchored at 22:30) — typical day of logs
+  // Slide 11 comment: "Add image. All entries should allow to add an image."
+  // Photos sprinkled across care / measurement / event / memory categories so
+  // the timeline visually demonstrates the rule — not just on pictures.
   { id: "e1", categoryId: "nursing", at: iso(0), durationMin: 1, meta: "1 min, right, Lots", photo: UNSPLASH("1503454537195-1dcabb73ffb9") },
-  { id: "e2", categoryId: "sleep", at: iso(2 * HOUR), durationMin: 80, meta: "1 h 20 min, night" },
+  { id: "e2", categoryId: "sleep", at: iso(2 * HOUR), durationMin: 80, meta: "1 h 20 min, night", photo: UNSPLASH("1519689680058-324335c77eba") },
   { id: "e3", categoryId: "diaper", at: iso(4 * HOUR), meta: "Mixed" },
   { id: "e4", categoryId: "nursing", at: iso(6 * HOUR), durationMin: 6, meta: "6 min, left" },
-  { id: "e5", categoryId: "bottle", at: iso(10 * HOUR), durationMin: 12, meta: "120 ml" },
+  { id: "e5", categoryId: "bottle", at: iso(10 * HOUR), durationMin: 12, meta: "120 ml", photo: UNSPLASH("1547036967-23d11aacaee0") },
   { id: "e6", categoryId: "diaper", at: iso(13 * HOUR), meta: "Wet" },
 
   // Yesterday (May 18) — milestone + a typical day
@@ -49,7 +52,7 @@ export const MOCK_ENTRIES: Entry[] = [
   { id: "e8", categoryId: "sleep", at: iso(DAY + 7 * HOUR), durationMin: 95, meta: "1 h 35 min, daytime" },
   { id: "e9", categoryId: "nursing", at: iso(DAY + 9 * HOUR), durationMin: 8, meta: "8 min, both", photo: UNSPLASH("1547036967-23d11aacaee0") },
   { id: "e10", categoryId: "diaper", at: iso(DAY + 11 * HOUR), meta: "Dirty" },
-  { id: "e11", categoryId: "weight-baby", at: iso(DAY + 14 * HOUR), meta: "5.4 kg" },
+  { id: "e11", categoryId: "weight-baby", at: iso(DAY + 14 * HOUR), meta: "5.4 kg", photo: UNSPLASH("1502086223501-7ea6ecd79368") },
 
   // 2 days ago (May 17)
   { id: "e12", categoryId: "picture", at: iso(2 * DAY + 5 * HOUR), meta: "First giggle", photo: UNSPLASH("1519689680058-324335c77eba") },
@@ -57,9 +60,9 @@ export const MOCK_ENTRIES: Entry[] = [
   { id: "e14", categoryId: "sleep", at: iso(2 * DAY + 12 * HOUR), durationMin: 110, meta: "1 h 50 min, night" },
 
   // 3 days ago (May 16)
-  { id: "e15", categoryId: "vaccinations", at: iso(3 * DAY + 3 * HOUR), meta: "DTP, second dose" },
+  { id: "e15", categoryId: "vaccinations", at: iso(3 * DAY + 3 * HOUR), meta: "DTP, second dose", photo: UNSPLASH("1503454537195-1dcabb73ffb9") },
   { id: "e16", categoryId: "doctor", at: iso(3 * DAY + 4 * HOUR), meta: "3-month checkup" },
-  { id: "e17", categoryId: "note", at: iso(3 * DAY + 5 * HOUR), meta: "Pediatrician very happy with weight" },
+  { id: "e17", categoryId: "note", at: iso(3 * DAY + 5 * HOUR), meta: "Pediatrician very happy with weight", photo: UNSPLASH("1502086223501-7ea6ecd79368") },
 
   // 4 days ago (May 15)
   { id: "e18", categoryId: "bathing", at: iso(4 * DAY + 6 * HOUR), durationMin: 12, meta: "12 min, evening", photo: UNSPLASH("1492725764893-90b379c2b6e7") },

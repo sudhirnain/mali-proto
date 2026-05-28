@@ -22,7 +22,12 @@ import type { Entry } from "@/lib/mock-entries";
  * with care logs as connective tissue.
  */
 
+// Slide 11 (A8): "Proposed logic for images. Only show them large from
+// Notes, Pictures and Milestones." Quote stays in the memory variant for
+// its serif italic card treatment (no big photo even if one is attached —
+// the photo renders as a small thumb instead, matching the rule).
 const MEMORY_IDS = new Set(["note", "picture", "quote", "milestone"]);
+const LARGE_PHOTO_IDS = new Set(["note", "picture", "milestone"]);
 const MEASUREMENT_IDS = new Set(["weight-baby", "weight-mom", "length", "head"]);
 
 type Variant = "memory" | "measurement" | "care";
@@ -46,6 +51,8 @@ export function JournalEntryCard({ entry }: { entry: Entry }) {
 function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
   const hasPhoto = Boolean(entry.photo);
   const isQuote = cat.id === "quote";
+  const showLargeHero = hasPhoto && LARGE_PHOTO_IDS.has(cat.id);
+  const showSmallThumb = hasPhoto && !LARGE_PHOTO_IDS.has(cat.id); // quotes only, currently
   const lightbox = useLightbox();
 
   return (
@@ -53,7 +60,7 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
       href={`/journal/entry/${entry.id}`}
       className="block bg-white rounded-2xl overflow-hidden border border-neutral-100 shadow-sm active:scale-[0.99] transition"
     >
-      {hasPhoto && (
+      {showLargeHero && (
         <button
           type="button"
           onClick={(e) => {
@@ -73,26 +80,29 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
           />
         </button>
       )}
-      <div className="px-4 py-3.5">
-        <div
-          className={`serif font-semibold text-neutral-900 leading-snug ${
-            hasPhoto ? "text-[16px]" : "text-[17px]"
-          } ${isQuote ? "italic" : ""}`}
-        >
-          {isQuote && <span className="text-neutral-400" aria-hidden>“</span>}
-          {entry.meta || cat.label}
-          {isQuote && <span className="text-neutral-400" aria-hidden>”</span>}
+      <div className="px-4 py-3.5 flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div
+            className={`serif font-semibold text-neutral-900 leading-snug ${
+              showLargeHero ? "text-[16px]" : "text-[17px]"
+            } ${isQuote ? "italic" : ""}`}
+          >
+            {isQuote && <span className="text-neutral-400" aria-hidden>“</span>}
+            {entry.meta || cat.label}
+            {isQuote && <span className="text-neutral-400" aria-hidden>”</span>}
+          </div>
+          <div className="text-[11px] text-neutral-500 mt-1.5 flex items-center gap-1.5">
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: `var(--color-${cat.color})` }}
+              aria-hidden
+            />
+            <span>
+              {cat.label} · {formatTime(entry.at)}
+            </span>
+          </div>
         </div>
-        <div className="text-[11px] text-neutral-500 mt-1.5 flex items-center gap-1.5">
-          <span
-            className="w-1.5 h-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: `var(--color-${cat.color})` }}
-            aria-hidden
-          />
-          <span>
-            {cat.label} · {formatTime(entry.at)}
-          </span>
-        </div>
+        {showSmallThumb && <PhotoThumb src={entry.photo!} />}
       </div>
     </Link>
   );
@@ -142,10 +152,10 @@ function CareRow({ entry, cat }: { entry: Entry; cat: Category }) {
           </span>
         )}
       </div>
-      {entry.photo && <PhotoThumb src={entry.photo} />}
-      <span className="text-[11px] text-neutral-400 tabular-nums shrink-0 leading-tight">
+      <span className="text-[11px] text-neutral-400 tabular-nums shrink-0 leading-none self-stretch flex items-center">
         {formatTime(entry.at)}
       </span>
+      {entry.photo && <PhotoThumb src={entry.photo} />}
     </Link>
   );
 }
@@ -174,10 +184,10 @@ function MeasurementRow({ entry, cat }: { entry: Entry; cat: Category }) {
           {cat.label}
         </span>
       </div>
-      {entry.photo && <PhotoThumb src={entry.photo} />}
-      <span className="text-[11px] text-neutral-400 tabular-nums shrink-0 leading-tight">
+      <span className="text-[11px] text-neutral-400 tabular-nums shrink-0 leading-none self-stretch flex items-center">
         {formatTime(entry.at)}
       </span>
+      {entry.photo && <PhotoThumb src={entry.photo} />}
     </Link>
   );
 }

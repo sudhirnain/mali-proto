@@ -95,7 +95,9 @@ export function MiniLogTile({ id }: { id: string }) {
       >
         <Illustration name={cat.iconName} className="w-5 h-5" />
       </div>
-      <div className="text-xs font-medium text-neutral-700 leading-tight truncate w-full text-center">
+      {/* 2-line, tight wrap: "Contractions" survives without an ugly "Contr…"
+       *  truncation. "Symptoms" fits on one line at this size. */}
+      <div className="text-[10.5px] font-medium text-neutral-700 leading-[1.15] w-full text-center break-words">
         {cat.label}
       </div>
     </Link>
