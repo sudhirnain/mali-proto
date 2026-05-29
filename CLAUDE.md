@@ -4,7 +4,7 @@
 
 ## Live deployment
 
-Production alias: **https://mali-proto.vercel.app** (Vercel scope `sudhir-nain-s-projects`, project `mali-proto`). Re-linked 2026-05-27 after the old `sudhir-4400` account became inaccessible. Deploy with `vercel deploy --prod --yes`. No external deps — pure mock data, deploys clean. If the URL hits a Vercel auth wall, fix at Project settings → Deployment Protection (the new project still has Standard Protection on as of 2026-05-28).
+Production alias: **https://mali-proto.vercel.app** (Vercel scope `sudhir-nain-s-projects`, project `mali-proto`). Re-linked 2026-05-27 after the old `sudhir-4400` account became inaccessible. Deploy with `vercel deploy --prod --yes` — the alias auto-updates because `mali-proto.vercel.app` is registered as the project's production domain (set 2026-05-29 via `vercel domains add`). No external deps — pure mock data, deploys clean. If the URL hits a Vercel auth wall, fix at Project settings → Deployment Protection (the new project still has Standard Protection on as of 2026-05-28).
 
 GitHub: **https://github.com/sudhirnain/mali-proto** (private). Local `.vercel/project.json` is gitignored; re-link from CLI if it's missing or stale.
 
@@ -160,6 +160,7 @@ Two slices — `live` (seeded from MOCK_ENTRIES + MILESTONES) and `cold` (empty)
 - **Symmetric StatStrip side rings** — both phases now use the same SideStat treatment on both left and right (`border border-[var(--color-primary)]/40 bg-white/40`) so the side icons read as a pair flanking the center hero. Don't introduce stronger borders/fills on one side only.
 - **DemoNavigator "In case you missed"** — 4-item demo-path list at the bottom of the widget. Each row orchestrates phase + cold mode + route in one click. The birth-handoff entry uses a 350ms setTimeout to force React to commit the pregnancy state before flipping to parenting (otherwise React batches the two setPhase calls and the BirthHandoff `useRef` transition detector doesn't fire). Placed last on purpose — "safety net" framing, not "starting line".
 - **Wired terminal buttons on every entry form.** Kicks: Done saves `{count} kicks, {min} min` with duration. Contractions: Stop toggles running state + counter; Done saves `{N} contractions, ~45s each`. Timer/Measurement/Event/Note all use SaveBar wired to useSaveEntry. No more dead Done buttons.
+- **Concurrent timers** (Jonas email 2026-05-29) — `ActiveTimer` context holds an **array** keyed by category, not a single timer. Sleep + Pumping run at once; `ActiveTimerChip` stacks one pill per running timer above the tab bar. API is category-keyed: `start(catId)` / `stop(catId)` / `timerFor(catId)` / `elapsedSec(catId)`. **Don't revert to a single `active` timer** — blocking concurrency was the exact bug Jonas flagged. Open follow-up: also surface running timers inline on the feed quick-logs (My Baby pattern).
 
 ## Where to look
 

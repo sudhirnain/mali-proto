@@ -52,7 +52,9 @@ Approach (proposing — confirm before building):
 
 ### A3. Background-running timers (sleep especially)
 
-**DONE (prototype-level).** Built `ActiveTimer` context + sticky chip ([active-timer.tsx](src/lib/active-timer.tsx), [ActiveTimerChip.tsx](src/components/ActiveTimerChip.tsx)). Survives navigation inside the phone shell.
+**DONE (prototype-level), now multi-timer.** Built `ActiveTimer` context + sticky chip ([active-timer.tsx](src/lib/active-timer.tsx), [ActiveTimerChip.tsx](src/components/ActiveTimerChip.tsx)). Survives navigation inside the phone shell.
+
+**Concurrent timers (Jonas email 2026-05-29).** Sleep and Pumping (etc.) can now run at once: the context holds an array keyed by category — `start(catId)` only no-ops if *that* category is already running — and the chip stacks one pill per running timer above the tab bar. Forms no longer block each other (the old SleepForm "stop the other timer first" guard is gone). Jonas's alternative phrasing ("move the countdown into the Journal overview, like My Baby") is the **OPEN** follow-up: surface running timers inline on the feed quick-logs. Note: he raised this against a stale `mali-proto.vercel.app` deploy that predated the retro Sleep form (slide 30), so his companion point about start/end + live tracking was already shipped — alias re-pointed same day.
 
 True iOS Live Activity / Dynamic Island / macOS Continuity (slide 27 shows all three) is platform-native and **OPEN** — out of scope for the prototype, would be a real-app build task. Mali deck shows these as the goal, not the prototype requirement.
 

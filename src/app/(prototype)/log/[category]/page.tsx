@@ -159,12 +159,12 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   // Running state is derived from the global active-timer context — that
   // way the chip and form agree even after navigation. The form drives
   // start/stop; the context owns the elapsed-time tick.
-  const runningHere = timer.active?.categoryId === cat.id;
-  const liveMinutes = runningHere ? Math.max(1, Math.floor(timer.elapsedSec / 60)) : minutes;
+  const runningHere = !!timer.timerFor(cat.id);
+  const liveMinutes = runningHere ? Math.max(1, Math.floor(timer.elapsedSec(cat.id) / 60)) : minutes;
 
   const onToggle = () => {
     if (runningHere) {
-      const mins = timer.stop();
+      const mins = timer.stop(cat.id);
       setMinutes(mins);
     } else {
       timer.start(cat.id);
@@ -175,7 +175,7 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     <div className="space-y-5">
       <div className="text-center">
         <div className="serif text-4xl font-semibold text-neutral-900 tabular-nums">
-          {runningHere ? formatTimerLive(timer.elapsedSec) : formatTimerClock(minutes)}
+          {runningHere ? formatTimerLive(timer.elapsedSec(cat.id)) : formatTimerClock(minutes)}
         </div>
         <div className="text-xs text-neutral-500 mt-1">
           {editing ? "Editing entry" : runningHere ? "Running — keeps going if you navigate away" : "Tap Start to begin"}
@@ -280,7 +280,7 @@ function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         cat={cat}
         editing={editing}
         onSave={() => {
-          const finalMin = runningHere ? timer.stop() : liveMinutes || 1;
+          const finalMin = runningHere ? timer.stop(cat.id) : liveMinutes || 1;
           const dur = formatDurationShort(finalMin);
           const parts: string[] = [dur];
           if (showSleepKind) parts.push(sleepKind);
@@ -346,8 +346,8 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
 
   const save = useSaveEntry(cat, editing);
   const timer = useActiveTimer();
-  const runningHere = timer.active?.categoryId === cat.id;
-  const runningElsewhere = !!timer.active && !runningHere;
+  const liveTimer = timer.timerFor(cat.id);
+  const runningHere = !!liveTimer;
 
   const fieldDurationMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
   const invalid = !runningHere && end.getTime() <= start.getTime();
@@ -376,10 +376,9 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   };
 
   const stopLive = () => {
-    if (!timer.active) return;
-    const startedAt = timer.active.startedAt;
-    timer.stop();
-    setStart(new Date(startedAt));
+    if (!liveTimer) return;
+    timer.stop(cat.id);
+    setStart(new Date(liveTimer.startedAt));
     setEnd(new Date());
   };
 
@@ -391,7 +390,7 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
           style={{ color: runningHere ? "var(--color-cat-sleep)" : undefined }}
         >
           {runningHere
-            ? formatTimerLive(timer.elapsedSec)
+            ? formatTimerLive(timer.elapsedSec(cat.id))
             : invalid
               ? "—"
               : formatDurationShort(fieldDurationMin)}
@@ -426,7 +425,7 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
 
       <Field label="Start">
         <DateTimeInput
-          value={runningHere && timer.active ? new Date(timer.active.startedAt) : start}
+          value={liveTimer ? new Date(liveTimer.startedAt) : start}
           onChange={setStart}
           disabled={runningHere}
         />
@@ -437,7 +436,7 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         </Field>
       )}
 
-      {!runningHere && !runningElsewhere && (
+      {!runningHere && (
         <button
           type="button"
           onClick={() => timer.start(cat.id)}
@@ -459,11 +458,6 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         >
           Stop &amp; fill end time
         </button>
-      )}
-      {runningElsewhere && (
-        <div className="text-xs text-neutral-500 text-center">
-          A {timer.active?.categoryId} timer is running — stop it from the chip to start a sleep timer.
-        </div>
       )}
 
       <div className="bg-neutral-50 rounded-full p-1 flex">
@@ -499,10 +493,9 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
         onSave={() => {
           let finalStart = start;
           let finalEnd = end;
-          if (runningHere && timer.active) {
-            const startedAt = timer.active.startedAt;
-            timer.stop();
-            finalStart = new Date(startedAt);
+          if (liveTimer) {
+            timer.stop(cat.id);
+            finalStart = new Date(liveTimer.startedAt);
             finalEnd = new Date();
           }
           const finalMin = Math.max(1, Math.round((finalEnd.getTime() - finalStart.getTime()) / 60000));

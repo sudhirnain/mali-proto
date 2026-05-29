@@ -6,24 +6,38 @@ import { getCategory } from "@/lib/categories";
 import { Illustration } from "./Illustration";
 
 /**
- * Floating chip that surfaces a running timer (sleep, nursing, etc.) across
- * all prototype routes — pinned just above the bottom tab bar inside the
- * phone shell. Tap returns to the originating log form so the user can stop
- * it. Renders nothing when no timer is running.
+ * Floating timer chips — surface running timers (sleep, pumping, etc.) across
+ * all prototype routes, stacked just above the bottom tab bar inside the phone
+ * shell. Multiple timers stack vertically so concurrent sessions (Sleep +
+ * Pumping) each get their own pill. Tap returns to the originating log form to
+ * stop it. Renders nothing when no timer is running.
  */
 export function ActiveTimerChip() {
-  const { active, elapsedSec } = useActiveTimer();
-  if (!active) return null;
-  const cat = getCategory(active.categoryId);
+  const { timers } = useActiveTimer();
+  if (timers.length === 0) return null;
+
+  return (
+    <div className="absolute left-1/2 -translate-x-1/2 bottom-20 z-40 flex flex-col-reverse items-center gap-2">
+      {timers.map((t) => (
+        <TimerPill key={t.categoryId} categoryId={t.categoryId} />
+      ))}
+    </div>
+  );
+}
+
+function TimerPill({ categoryId }: { categoryId: string }) {
+  const { elapsedSec } = useActiveTimer();
+  const cat = getCategory(categoryId);
   if (!cat) return null;
 
-  const mm = Math.floor(elapsedSec / 60).toString().padStart(2, "0");
-  const ss = (elapsedSec % 60).toString().padStart(2, "0");
+  const sec = elapsedSec(categoryId);
+  const mm = Math.floor(sec / 60).toString().padStart(2, "0");
+  const ss = (sec % 60).toString().padStart(2, "0");
 
   return (
     <Link
-      href={`/log/${active.categoryId}`}
-      className="absolute left-1/2 -translate-x-1/2 bottom-20 z-40 flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-full shadow-lg active:scale-[0.98] transition"
+      href={`/log/${categoryId}`}
+      className="flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-full shadow-lg active:scale-[0.98] transition"
       style={{ backgroundColor: `var(--color-${cat.color})` }}
       aria-label={`${cat.label} running, tap to manage`}
     >
