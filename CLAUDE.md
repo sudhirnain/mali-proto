@@ -72,7 +72,7 @@ The system: `--color-primary*` CSS variables resolve to coral at `:root`, teal u
 
 Components consume via `bg-[var(--color-primary)]` / `text-[var(--color-primary-dark)]` / etc. — never hardcoded `bg-coral` (except the deliberate `--color-coral` MOM-badge case above), so future palette tweaks land in one place.
 
-Categories keep their own colors (sleep = purple, nursing = green, diaper = amber, milestone = teal, etc.) — those are per-category, not per-phase. Unchanged.
+Categories keep their own colors (sleep = purple, nursing = green, diaper = amber, milestone = teal, etc.) — those are per-category, not per-phase. **Pregnancy-track categories alias the brand tokens** (2026-06-02 tightening, zero pixel change): `cat-kicks` = `var(--color-coral)`, `cat-kicks-soft` = coral-soft, `cat-contractions` = coral-dark, `cat-milestone` = coral — declared as var() refs in BOTH the `@theme` and `:root` copies of globals.css. Don't re-inline those hexes; edit the brand token instead. The Adjust panel shows them as "= coral" chips, not inputs.
 
 Phase distinction now comes from **content**, not chrome: StatStrip subject (Mom vs Lu), default quick-logs (mom-experience vs baby-care), MilestoneHero (parenting) vs JourneyHero (pregnancy), MyWeekCard appears only in pregnancy.
 

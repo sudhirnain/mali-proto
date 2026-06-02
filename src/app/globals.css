@@ -37,13 +37,15 @@
   --color-cat-health-soft: #e4edf9;
   --color-cat-mood: #d27fbf;
   --color-cat-mood-soft: #f7e8f3;
-  --color-cat-kicks: #e76f66;
-  --color-cat-kicks-soft: #f8c2b6;
-  --color-cat-contractions: #c8554c;
+  /* Pregnancy-track categories are deliberately brand-family — alias the
+     brand tokens instead of repeating the hex, so a brand tweak cascades. */
+  --color-cat-kicks: var(--color-coral);
+  --color-cat-kicks-soft: var(--color-coral-soft);
+  --color-cat-contractions: var(--color-coral-dark);
   --color-cat-contractions-soft: #f1bcb6;
   --color-cat-memory: #b59f88;
   --color-cat-memory-soft: #ece3d7;
-  --color-cat-milestone: #e76f66;
+  --color-cat-milestone: var(--color-coral);
   --color-cat-milestone-soft: #fde7e3;
 }
 
@@ -74,13 +76,14 @@
   --color-cat-health-soft: #e4edf9;
   --color-cat-mood: #d27fbf;
   --color-cat-mood-soft: #f7e8f3;
-  --color-cat-kicks: #e76f66;
-  --color-cat-kicks-soft: #f8c2b6;
-  --color-cat-contractions: #c8554c;
+  /* Pregnancy-track categories alias the brand (see @theme copy above). */
+  --color-cat-kicks: var(--color-coral);
+  --color-cat-kicks-soft: var(--color-coral-soft);
+  --color-cat-contractions: var(--color-coral-dark);
   --color-cat-contractions-soft: #f1bcb6;
   --color-cat-memory: #b59f88;
   --color-cat-memory-soft: #ece3d7;
-  --color-cat-milestone: #e76f66;
+  --color-cat-milestone: var(--color-coral);
   --color-cat-milestone-soft: #fde7e3;
 
   /* Neutral scale — re-exposed at :root so inline `style={{ stroke: var(--color-neutral-200) }}`

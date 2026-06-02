@@ -10,22 +10,24 @@ import { useEffect, useState } from "react";
  * Text: browser designMode — click any text inside the phone and retype it.
  * DOM-only, gone on navigation; meant for screenshots, not persistence.
  *
- * Colors: every brand + category color routes through the CSS variables
- * below, so overriding the variable restyles every surface that uses it.
- * Overrides are injected as a `:root, [data-phase] { … !important }` style
- * tag (out-ranks the parenting teal block) and persisted in localStorage so
- * they survive reload on the reviewer's device. "Reset" returns to shipped.
+ * Colors: every brand + category color routes through CSS variables, so
+ * overriding the variable restyles every surface that uses it. Overrides are
+ * injected as a `:root, [data-phase] { … !important }` style tag (out-ranks
+ * the parenting teal block) and persisted in localStorage. "Reset" returns
+ * to shipped.
+ *
+ * Design-system shape (mirrors globals.css): pregnancy-track categories
+ * (kicks / contractions / milestone icon) ALIAS the coral brand tokens via
+ * var() — they render as "= coral" chips here, not inputs, and follow brand
+ * edits automatically. One source of truth per hue.
  */
 
 const STORAGE_KEY = "mali-color-tweaks";
 const STYLE_ID = "mali-color-tweaks";
 
-type Swatch = { var: string; label: string };
-type SwatchGroup = { label: string; swatches: Swatch[] };
-
-const GROUPS: SwatchGroup[] = [
+const BRAND_GROUPS: { label: string; swatches: { var: string; label: string }[] }[] = [
   {
-    label: "Brand — pregnancy (coral)",
+    label: "Pregnancy brand (coral)",
     swatches: [
       { var: "--color-coral", label: "Primary" },
       { var: "--color-coral-dark", label: "Dark" },
@@ -34,7 +36,7 @@ const GROUPS: SwatchGroup[] = [
     ],
   },
   {
-    label: "Brand — parenting (teal)",
+    label: "Parenting brand (teal)",
     swatches: [
       { var: "--color-teal", label: "Primary" },
       { var: "--color-teal-dark", label: "Dark" },
@@ -42,30 +44,39 @@ const GROUPS: SwatchGroup[] = [
       { var: "--color-teal-softer", label: "Softer" },
     ],
   },
-  {
-    label: "Categories (icon · tile bg)",
-    swatches: [
-      "sleep",
-      "food",
-      "diaper",
-      "care",
-      "growth",
-      "health",
-      "mood",
-      "kicks",
-      "contractions",
-      "memory",
-      "milestone",
-    ].flatMap((c) => [
-      { var: `--color-cat-${c}`, label: c },
-      { var: `--color-cat-${c}-soft`, label: `${c} bg` },
-    ]),
-  },
+];
+
+/** One row per category: icon color + tile bg. `iconAlias`/`bgAlias` mark
+ *  tokens that alias a brand var in globals.css — shown as chips, not inputs
+ *  (overriding them here would silently break the alias). */
+const CATEGORIES: { id: string; label: string; iconAlias?: string; bgAlias?: string }[] = [
+  { id: "sleep", label: "Sleep" },
+  { id: "food", label: "Food" },
+  { id: "diaper", label: "Diaper" },
+  { id: "care", label: "Care" },
+  { id: "growth", label: "Growth" },
+  { id: "health", label: "Health" },
+  { id: "mood", label: "Mood" },
+  { id: "kicks", label: "Kicks", iconAlias: "coral", bgAlias: "coral soft" },
+  { id: "contractions", label: "Contract.", iconAlias: "coral dark" },
+  { id: "memory", label: "Memory" },
+  { id: "milestone", label: "Milestone", iconAlias: "coral" },
+];
+
+const EDITABLE_VARS: string[] = [
+  ...BRAND_GROUPS.flatMap((g) => g.swatches.map((s) => s.var)),
+  ...CATEGORIES.flatMap((c) => [
+    ...(c.iconAlias ? [] : [`--color-cat-${c.id}`]),
+    ...(c.bgAlias ? [] : [`--color-cat-${c.id}-soft`]),
+  ]),
 ];
 
 function readStored(): Record<string, string> {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
+    const raw: Record<string, string> = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
+    // Drop keys that are no longer editable (e.g. saved before a token became
+    // a brand alias) — otherwise they'd override invisibly, with no UI row.
+    return Object.fromEntries(Object.entries(raw).filter(([k]) => EDITABLE_VARS.includes(k)));
   } catch {
     return {};
   }
@@ -97,40 +108,39 @@ export function useStoredColorTweaks() {
 
 const HEX_RE = /^#?([0-9a-fA-F]{6})$/;
 
-/** One color row: swatch · label · hex field. Applies on blur/Enter when the
- *  value parses as 6-digit hex (with or without leading #). */
-function HexRow({
-  label,
+/** Swatch + hex input. Applies on blur/Enter when the value parses as
+ *  6-digit hex (leading # optional); invalid input snaps back. */
+function HexField({
   value,
   overridden,
   onCommit,
+  ariaLabel,
+  narrow = false,
 }: {
-  label: string;
   value: string;
   overridden: boolean;
   onCommit: (hex: string) => void;
+  ariaLabel: string;
+  narrow?: boolean;
 }) {
   const [draft, setDraft] = useState(value);
-  // Keep the field in sync when the resolved value arrives async (defaults
-  // load after mount) or Reset clears overrides.
+  // Re-sync when the resolved value arrives async (defaults load after
+  // mount) or Reset clears overrides.
   useEffect(() => setDraft(value), [value]);
 
   const commit = () => {
     const m = draft.trim().match(HEX_RE);
     if (m) onCommit(`#${m[1].toLowerCase()}`);
-    else setDraft(value); // invalid → snap back
+    else setDraft(value);
   };
 
   return (
-    <label className="flex items-center gap-1.5 text-[10.5px] text-neutral-600">
+    <span className="inline-flex items-center gap-1">
       <span
         aria-hidden
-        className="w-4 h-4 rounded border border-neutral-200 shrink-0"
+        className={`w-3.5 h-3.5 rounded border shrink-0 ${overridden ? "border-neutral-500" : "border-neutral-200"}`}
         style={{ backgroundColor: value }}
       />
-      <span className={`flex-1 truncate capitalize ${overridden ? "font-semibold text-neutral-800" : ""}`}>
-        {label}
-      </span>
       <input
         type="text"
         value={draft}
@@ -138,10 +148,24 @@ function HexRow({
         onBlur={commit}
         onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
         spellCheck={false}
-        aria-label={`${label} hex color`}
-        className="w-[72px] bg-neutral-50 border border-neutral-200 rounded px-1.5 py-0.5 font-mono text-[10.5px] text-neutral-800 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+        aria-label={ariaLabel}
+        className={`${narrow ? "w-[60px]" : "w-[72px]"} bg-neutral-50 border border-neutral-200 rounded px-1 py-0.5 font-mono text-[10px] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] ${
+          overridden ? "font-bold text-neutral-900" : "text-neutral-700"
+        }`}
       />
-    </label>
+    </span>
+  );
+}
+
+/** Token that aliases a brand var — follows brand edits, not editable here. */
+function AliasChip({ name }: { name: string }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center w-[79px] py-0.5 rounded border border-dashed border-neutral-200 text-[9px] text-neutral-400 truncate"
+      title={`Follows the ${name} brand token`}
+    >
+      = {name}
+    </span>
   );
 }
 
@@ -150,11 +174,11 @@ export function TweakPanel() {
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [defaults, setDefaults] = useState<Record<string, string>>({});
 
-  // Resolve shipped values once (for the color inputs' starting position).
+  // Resolve shipped values once (for swatches + input starting positions).
   useEffect(() => {
     const cs = getComputedStyle(document.documentElement);
     const d: Record<string, string> = {};
-    for (const g of GROUPS) for (const s of g.swatches) d[s.var] = cs.getPropertyValue(s.var).trim();
+    for (const v of EDITABLE_VARS) d[v] = cs.getPropertyValue(v).trim();
     setDefaults(d);
     setOverrides(readStored());
   }, []);
@@ -182,6 +206,7 @@ export function TweakPanel() {
     injectOverrides({});
   };
 
+  const valueOf = (cssVar: string) => overrides[cssVar] ?? defaults[cssVar] ?? "";
   const dirty = Object.keys(overrides).length > 0;
 
   return (
@@ -206,24 +231,70 @@ export function TweakPanel() {
         </p>
       )}
 
-      {GROUPS.map((g) => (
+      {BRAND_GROUPS.map((g) => (
         <details key={g.label} className="px-1">
           <summary className="text-[11px] font-semibold text-neutral-600 cursor-pointer px-1.5 py-1 rounded hover:bg-neutral-100 select-none">
             {g.label}
           </summary>
           <div className="flex flex-col gap-1 mt-1.5 px-1">
             {g.swatches.map((s) => (
-              <HexRow
-                key={s.var}
-                label={s.label}
-                value={overrides[s.var] ?? defaults[s.var] ?? ""}
-                overridden={s.var in overrides}
-                onCommit={(hex) => setColor(s.var, hex)}
-              />
+              <label key={s.var} className="flex items-center gap-1.5 text-[10.5px] text-neutral-600">
+                <span className="flex-1 truncate">{s.label}</span>
+                <HexField
+                  value={valueOf(s.var)}
+                  overridden={s.var in overrides}
+                  onCommit={(hex) => setColor(s.var, hex)}
+                  ariaLabel={`${g.label} ${s.label} hex`}
+                />
+              </label>
             ))}
           </div>
         </details>
       ))}
+
+      <details className="px-1">
+        <summary className="text-[11px] font-semibold text-neutral-600 cursor-pointer px-1.5 py-1 rounded hover:bg-neutral-100 select-none">
+          Categories
+        </summary>
+        <div className="flex items-center gap-1.5 mt-1.5 px-1 text-[9px] uppercase tracking-wide text-neutral-400">
+          <span className="flex-1" />
+          <span className="w-[79px] text-center">icon</span>
+          <span className="w-[79px] text-center">tile bg</span>
+        </div>
+        <div className="flex flex-col gap-1 mt-1 px-1">
+          {CATEGORIES.map((c) => {
+            const iconVar = `--color-cat-${c.id}`;
+            const bgVar = `--color-cat-${c.id}-soft`;
+            return (
+              <div key={c.id} className="flex items-center gap-1.5 text-[10.5px] text-neutral-600">
+                <span className="flex-1 truncate" title={c.label}>{c.label}</span>
+                {c.iconAlias ? (
+                  <AliasChip name={c.iconAlias} />
+                ) : (
+                  <HexField
+                    narrow
+                    value={valueOf(iconVar)}
+                    overridden={iconVar in overrides}
+                    onCommit={(hex) => setColor(iconVar, hex)}
+                    ariaLabel={`${c.label} icon hex`}
+                  />
+                )}
+                {c.bgAlias ? (
+                  <AliasChip name={c.bgAlias} />
+                ) : (
+                  <HexField
+                    narrow
+                    value={valueOf(bgVar)}
+                    overridden={bgVar in overrides}
+                    onCommit={(hex) => setColor(bgVar, hex)}
+                    ariaLabel={`${c.label} tile background hex`}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </details>
 
       <div className="flex items-center justify-between px-1.5">
         <p className="text-[10px] text-neutral-400 leading-snug pr-2">
