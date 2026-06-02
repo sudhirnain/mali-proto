@@ -236,8 +236,10 @@ export function TweakPanel() {
         </p>
       )}
 
+      {/* Brand groups start expanded (Sudhir) — they're the high-traffic
+          knobs; the long Categories list stays collapsed. */}
       {BRAND_GROUPS.map((g) => (
-        <details key={g.label} className="px-1">
+        <details key={g.label} className="px-1" open>
           <summary className="text-[11px] font-semibold text-neutral-600 cursor-pointer px-1.5 py-1 rounded hover:bg-neutral-100 select-none">
             {g.label}
           </summary>
