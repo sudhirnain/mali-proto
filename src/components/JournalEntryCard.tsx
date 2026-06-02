@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Illustration } from "./Illustration";
 import { useLightbox } from "./PhotoLightbox";
 import { getCategory, type Category } from "@/lib/categories";
+import { milestoneArtOrFallback } from "@/lib/milestone-art";
 import { formatTime } from "@/lib/format";
 import { useEntries } from "@/lib/journal-store";
 import type { Entry } from "@/lib/mock-entries";
@@ -78,6 +79,17 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
   const allPhotos = useAllPhotos();
   const photoIndex = hasPhoto ? allPhotos.indexOf(entry.photo!) : -1;
 
+  // Milestone entries (Jonas round-2 s11: "add default milestone drawing, which
+  // we replace with an image if it was added"). The milestone id is on
+  // entry.milestoneId (set by both the seed and setMilestoneDone). With a photo
+  // the large hero above already shows the image, so the drawing fills the
+  // no-photo case.
+  const isMilestone = cat.id === "milestone";
+  const milestoneDrawing =
+    isMilestone && !hasPhoto && entry.milestoneId
+      ? milestoneArtOrFallback(entry.milestoneId)
+      : null;
+
   return (
     <Link
       href={`/journal/entry/${entry.id}`}
@@ -126,6 +138,14 @@ function MemoryEntryCard({ entry, cat }: { entry: Entry; cat: Category }) {
           </div>
         </div>
         {showSmallThumb && <PhotoThumb src={entry.photo!} allPhotos={allPhotos} index={photoIndex} />}
+        {milestoneDrawing && (
+          <span
+            className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[var(--color-primary-softer)]"
+            aria-hidden
+          >
+            <Image src={milestoneDrawing} alt="" fill sizes="56px" className="object-contain p-1.5" />
+          </span>
+        )}
       </div>
     </Link>
   );
