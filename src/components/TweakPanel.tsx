@@ -57,10 +57,10 @@ const CATEGORIES: { id: string; label: string; iconAlias?: string; bgAlias?: str
   { id: "growth", label: "Growth" },
   { id: "health", label: "Health" },
   { id: "mood", label: "Mood" },
-  { id: "kicks", label: "Kicks", iconAlias: "coral", bgAlias: "coral soft" },
+  { id: "kicks", label: "Kicks", iconAlias: "coral dark", bgAlias: "coral soft" },
   { id: "contractions", label: "Contract.", iconAlias: "coral dark" },
   { id: "memory", label: "Memory" },
-  { id: "milestone", label: "Milestone", iconAlias: "coral" },
+  { id: "milestone", label: "Milestone", iconAlias: "coral dark" },
 ];
 
 const EDITABLE_VARS: string[] = [

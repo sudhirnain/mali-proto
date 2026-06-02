@@ -1,19 +1,40 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type Phase = "pregnancy" | "parenting";
 
 type PhaseCtx = {
   phase: Phase;
   setPhase: (p: Phase) => void;
+  /** What caused the last phase change. URL-driven swaps (deep links,
+   *  screenshot sweeps) must not fire the BirthHandoff celebration. */
+  lastChangeSource: "user" | "url";
 };
 
 const Ctx = createContext<PhaseCtx | null>(null);
 
 export function PhaseProvider({ children }: { children: ReactNode }) {
-  const [phase, setPhase] = useState<Phase>("pregnancy");
-  return <Ctx.Provider value={{ phase, setPhase }}>{children}</Ctx.Provider>;
+  const [state, setState] = useState<{ phase: Phase; lastChangeSource: "user" | "url" }>({
+    phase: "pregnancy",
+    lastChangeSource: "user",
+  });
+
+  // Honor ?phase=parenting after mount — deep-linkable demo states and
+  // headless screenshot sweeps. Effect (not state initializer) so SSR and
+  // first client render agree; the swap lands one frame later.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("phase");
+    if (p === "parenting" || p === "pregnancy") setState({ phase: p, lastChangeSource: "url" });
+  }, []);
+
+  const setPhase = (p: Phase) => setState({ phase: p, lastChangeSource: "user" });
+
+  return (
+    <Ctx.Provider value={{ phase: state.phase, setPhase, lastChangeSource: state.lastChangeSource }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function usePhase(): PhaseCtx {

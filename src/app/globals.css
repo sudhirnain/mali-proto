@@ -41,7 +41,7 @@
   --color-cat-diaper-soft: #f7ecd6;
   --color-cat-care: #a86cd0;
   --color-cat-care-soft: #f0e6f8;
-  --color-cat-growth: #f4818a;
+  --color-cat-growth: #e0566b; /* deeper rose — old #f4818a clashed with froly + weak on soft */
   --color-cat-growth-soft: #fde0e3;
   --color-cat-health: #5b94d8;
   --color-cat-health-soft: #e4edf9;
@@ -49,13 +49,13 @@
   --color-cat-mood-soft: #f7e8f3;
   /* Pregnancy-track categories are deliberately brand-family — alias the
      brand tokens instead of repeating the hex, so a brand tweak cascades. */
-  --color-cat-kicks: var(--color-coral);
+  --color-cat-kicks: var(--color-coral-dark); /* froly icon was ~1.4:1 on soft */
   --color-cat-kicks-soft: var(--color-coral-soft);
   --color-cat-contractions: var(--color-coral-dark);
   --color-cat-contractions-soft: #f1bcb6;
   --color-cat-memory: #b59f88;
   --color-cat-memory-soft: #ece3d7;
-  --color-cat-milestone: var(--color-coral);
+  --color-cat-milestone: var(--color-coral-dark); /* froly icon was ~1.8:1 on soft */
   --color-cat-milestone-soft: #fde7e3;
 }
 
@@ -80,7 +80,7 @@
   --color-cat-diaper-soft: #f7ecd6;
   --color-cat-care: #a86cd0;
   --color-cat-care-soft: #f0e6f8;
-  --color-cat-growth: #f4818a;
+  --color-cat-growth: #e0566b; /* deeper rose — old #f4818a clashed with froly + weak on soft */
   --color-cat-growth-soft: #fde0e3;
   --color-cat-health: #5b94d8;
   --color-cat-health-soft: #e4edf9;
@@ -91,13 +91,13 @@
   --color-mom-soft: var(--color-coral-softer);
 
   /* Pregnancy-track categories alias the brand (see @theme copy above). */
-  --color-cat-kicks: var(--color-coral);
+  --color-cat-kicks: var(--color-coral-dark); /* froly icon was ~1.4:1 on soft */
   --color-cat-kicks-soft: var(--color-coral-soft);
   --color-cat-contractions: var(--color-coral-dark);
   --color-cat-contractions-soft: #f1bcb6;
   --color-cat-memory: #b59f88;
   --color-cat-memory-soft: #ece3d7;
-  --color-cat-milestone: var(--color-coral);
+  --color-cat-milestone: var(--color-coral-dark); /* froly icon was ~1.8:1 on soft */
   --color-cat-milestone-soft: #fde7e3;
 
   /* Neutral scale — re-exposed at :root so inline `style={{ stroke: var(--color-neutral-200) }}`
@@ -143,3 +143,4 @@ h1, h2, .serif {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+

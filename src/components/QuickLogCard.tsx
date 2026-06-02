@@ -21,7 +21,12 @@ export function QuickLogCard({ id, subtext, badge }: Props) {
 
   const label = cat.label;
   const icon = cat.iconName;
-  const color = cat.color;
+  // tileColor, not cat.color — quick-log cards are tile surfaces and must
+  // match the /log composer + Moments tiles (mom = maliRed/azalea, kicks =
+  // brick red). Raw cat.color here was the "icons don't match backgrounds"
+  // drift: weight-mom rose on /feed vs maliRed on /log, kicks froly on
+  // mildPeach at ~1.4:1.
+  const color = tileColor(cat);
   const href = `/log/${cat.id}`;
 
   // Derive last-event time

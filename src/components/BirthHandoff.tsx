@@ -31,17 +31,19 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * phase change.
  */
 export function BirthHandoff() {
-  const { phase } = usePhase();
+  const { phase, lastChangeSource } = usePhase();
   const baby = useBaby();
   const prevPhase = useRef(phase);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (prevPhase.current === "pregnancy" && phase === "parenting") {
+    // Only USER phase switches celebrate — a ?phase=parenting deep link is a
+    // navigation, not a birth.
+    if (prevPhase.current === "pregnancy" && phase === "parenting" && lastChangeSource === "user") {
       setOpen(true);
     }
     prevPhase.current = phase;
-  }, [phase]);
+  }, [phase, lastChangeSource]);
 
   useEffect(() => {
     if (phase !== "pregnancy") return;

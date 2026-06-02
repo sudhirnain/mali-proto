@@ -80,7 +80,9 @@ export function suggestionsForPhase(phase: string, name: string): Suggestion[] {
   if (phase === "pregnancy") {
     return [
       { href: "/log/picture", label: "Take this week's bump photo", iconName: "picture", color: "cat-memory" },
-      { href: "/log/kicks", label: "Log a kick session", iconName: "kick", color: "cat-kicks" },
+      // cat-contractions = tileColor for the Pregnancy group — keeps this row
+      // matching the kicks tiles (cat-kicks aliases froly, unreadable on soft).
+      { href: "/log/kicks", label: "Log a kick session", iconName: "kick", color: "cat-contractions" },
       { href: "/log/note", label: "Note how you're feeling", iconName: "note", color: "cat-memory" },
     ];
   }
