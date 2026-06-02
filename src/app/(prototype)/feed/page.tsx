@@ -189,7 +189,7 @@ export default function FeedPage() {
         />
       </div>
 
-      <PrimaryFAB />
+      <PrimaryFAB hideOnScroll />
     </div>
   );
 }

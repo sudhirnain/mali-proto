@@ -42,10 +42,12 @@ export function FeedHeader() {
   const entries = useEntries();
   const baby = useBaby();
   const [expanded, setExpanded] = useState(false);
-  // Scroll-driven header. In pregnancy, scrollY both collapses the StatStrip
-  // hero (CollapsingHero) and cross-fades the floating pill from the size-of
-  // line to the compact "Week N · Day D" anchor (ScrollPills). Thresholds are
-  // tuned together so the pill arrives exactly as the hero finishes collapsing.
+  // Slide 8 — 3-state scroll transition. scrollY drives two stacked pills
+  // that cross-fade based on position:
+  //   0 → 40px   nothing (full header is the show)
+  //   40 → 180px size-of explainer fades in/out
+  //   180+ px    "Week N · Day D" compact pill takes over
+  // See ScrollPills below.
   const scrollY = useScrollY();
 
   const isPreg = phase === "pregnancy";
@@ -75,9 +77,10 @@ export function FeedHeader() {
 
   return (
     <section className={`${bgClass} relative md:pt-11`}>
-      {/* Single floating pill that takes over as the hero collapses:
-       *   1. "Lu is the size of a kale"  (reinforces the collapsing hero line)
-       *   2. "Week 32 · Day 4"           (the at-a-glance anchor that remains)
+      {/* Slide 8 — single floating pill that morphs between two phases as
+       *  the user scrolls past the StatStrip:
+       *   1. "Lu is the size of an avocado"  (the fruit explainer)
+       *   2. "Week 32 · Day 4"               (the at-a-glance anchor)
        *  No in-place morph inside the StatStrip — that approach overlapped the
        *  watercolor visually. */}
       {isPreg && (
@@ -90,17 +93,7 @@ export function FeedHeader() {
         />
       )}
 
-      {/* R2 s3: "Make this disappear when scrolling down (we prefer not to
-       *  have it)." In pregnancy the big StatStrip hero fully collapses as the
-       *  user scrolls, handing off to the floating week pill (ScrollPills).
-       *  Parenting keeps the static hero — the ask is pregnancy-scoped. */}
-      {isPreg ? (
-        <CollapsingHero scrollY={scrollY}>
-          <StatStrip />
-        </CollapsingHero>
-      ) : (
-        <StatStrip />
-      )}
+      <StatStrip />
 
       {/* Quick-log row — pregnancy uses 4 mini tiles (tighter, daily
        *  mom-experience trackers); parenting keeps the 3 big QuickLogCards.   */}
@@ -170,11 +163,6 @@ export function FeedHeader() {
   );
 }
 
-// Scroll distance over which the pregnancy StatStrip hero fully collapses.
-// Roughly its rendered height (rings row + size-of banner + padding) so it's
-// gone — not just dimmed — by the time the user has scrolled past it.
-const HERO_COLLAPSE_PX = 160;
-
 function rampOpacity(y: number, inStart: number, inEnd: number, outStart: number, outEnd: number): number {
   if (y < inStart) return 0;
   if (y < inEnd) return (y - inStart) / (inEnd - inStart);
@@ -189,47 +177,17 @@ function articleFor(word: string | undefined): string {
 }
 
 /**
- * R2 s3 — collapses the pregnancy StatStrip hero to zero height as the user
- * scrolls (0 → HERO_COLLAPSE_PX), then unmounts it so it occupies no space.
- * Fades + lifts on the way out so the handoff to the floating week pill reads
- * as one element shrinking away. Parenting keeps the static hero.
- */
-function CollapsingHero({
-  scrollY,
-  children,
-}: {
-  scrollY: number;
-  children: React.ReactNode;
-}) {
-  const t = Math.min(1, Math.max(0, scrollY / HERO_COLLAPSE_PX));
-  if (t >= 1) return null;
-  return (
-    <div
-      aria-hidden={t > 0.6}
-      style={{
-        opacity: 1 - t,
-        maxHeight: `${(1 - t) * 320}px`,
-        transform: `translateY(${-t * 16}px)`,
-      }}
-      className="overflow-hidden will-change-[opacity,transform]"
-    >
-      {children}
-    </div>
-  );
-}
-
-/**
- * Single floating pill anchored to the top of the phone shell. As the hero
- * collapses (0 → HERO_COLLAPSE_PX) it hands off to two stacked phases:
+ * Slide 8 — single floating pill anchored to the top of the phone shell.
+ * Morphs through two phases as the user scrolls. Both phases share the same
+ * fixed anchor so the morph reads as one element changing content.
  *
- *   60  – 120  "Lu is the size of a kale" fades in (reinforces the hero line
- *              that's collapsing away)
- *   120 – 150  holds
- *   150 – 200  cross-fades to "Week 32 · Day 4"
- *   200 +      "Week 32 · Day 4" holds, tappable → scroll back to top
+ *  scrollY ranges (tuned for the actual StatStrip + quick-logs height):
  *
- * Tuned so the week pill is fully present right as the hero finishes
- * collapsing, leaving exactly one anchor on screen.
+ *   0   – 120  hidden (header still visible, no need)
+ *   120 – 180  "Lu is the size of an avocado" fades in
+ *   180 – 360  holds at full opacity
+ *   360 – 420  cross-fade to "Week 32 · Day 4"
+ *   420 +      "Week 32 · Day 4" holds, tappable → scroll back to top
  */
 function ScrollPills({
   scrollY,
@@ -244,8 +202,8 @@ function ScrollPills({
   sizeFruit?: string;
   week?: number;
 }) {
-  const sizeOpacity = rampOpacity(scrollY, 60, 120, 150, 200);
-  const weekOpacity = rampOpacity(scrollY, 150, 200, Infinity, Infinity);
+  const sizeOpacity = rampOpacity(scrollY, 120, 180, 360, 420);
+  const weekOpacity = rampOpacity(scrollY, 360, 420, Infinity, Infinity);
   if (sizeOpacity <= 0 && weekOpacity <= 0) return null;
 
   const weekArt = week ? `/mali-art/weekly/w${week}.png` : null;

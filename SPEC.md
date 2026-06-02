@@ -593,7 +593,15 @@ Annotation arrow → quote card → *"Nice idea!"* — Jonas approves the inline
 
 Second review pass from Jonas. **Slide numbers here are from `feedback02.pptx` and do NOT match Part B** (a different, 66-slide deck). Single author (Jonas Lenz Koblin); feedback is a mix of pinned comments and text typed directly onto slides. This batch covers slides 3–15 (reviewed 2026-06-02).
 
-**Build status (2026-06-02):** s3, s4, s5, s6, s8, s11, s13, s14 are **BUILT** (production build green; visual QA was code-review-only — Chrome MCP was unavailable). s7 = FAB-visibility built; "replicate card from Feed" deferred (ambiguous). **s13 pink = surgical**: only the MOM badge was made coral (`--color-coral`); the global `[data-phase="parenting"]` teal override remains — full pink-only (A1) is still an open decision. Still DECIDE/not built: **s10** (article reader), **s12** (image-only legacy graphs), **s15** (icon-vs-drawing rule).
+**Build status (2026-06-02, corrected after a checklist re-review):** s4, s5, s6, s8, s9, s11, s14 **BUILT** and verified by production build (visual QA was code-review-only — Chrome MCP was down all session).
+
+**s3 redone correctly (pass 2):** the first attempt put the due-date sheet + size-of banner on the StatStrip and collapsed the hero — all the *wrong* targets. Jonas's slide-3 mock is the **`JourneyHero` card**. Reverted StatStrip/FeedHeader to their pre-round-2 state and rebuilt `JourneyHero` as the shared compact card (Feed + Moments): trimester · Week · "Your baby is about the size of a <X>" + image · progress · **tappable due date** (opens a change-due-date sheet). The Feed FAB now hides on scroll (`PrimaryFAB hideOnScroll`) while Journal's stays visible (resolves the s3-vs-s7 conflict). ⚠️ **baby-as-animal image still a placeholder** (reuses the weekly watercolor — no creature art asset; size value is still fruit, not an animal).
+
+**s7:** "replicate card from Feed" now **DONE** (same `JourneyHero` renders on both surfaces); FAB stays big/visible on Journal.
+
+**s13:** "Mom's wellbeing" rename now applied to **both** the Moments section and the `/log` composer group header; first-person labels done; mood moved to Health (Moments); **pink = surgical** (MOM badge coral only — the `[data-phase="parenting"]` teal override still stands; full pink-only A1 remains open).
+
+Still DECIDE / not built: **s10** (article reader), **s12** (image-only legacy graphs), **s15** (icon-vs-drawing rule), and the **baby-as-animal art** (asset-blocked). s5 "clearer CTA" addressed via the sticky Save (no copy change).
 
 ### R2 s3 — Feed header
 - **BUILD.** Due-date element should be a **link** (*"see right"*) — same ask as A5b; reinforces making the right-ring due date tappable.

@@ -27,6 +27,12 @@ const GROUP_ORDER: CategoryGroup[] = [
   "Pregnancy",
 ];
 
+// Display titles for group headers where the section name differs from the
+// internal CategoryGroup key (Jonas s13: "Call it: Mom's wellbeing").
+function groupLabel(group: CategoryGroup): string {
+  return group === "Wellbeing" ? "Mom's wellbeing" : group;
+}
+
 /**
  * Phase-appropriate fallback pool for the "Right now" picks.
  *
@@ -129,7 +135,7 @@ export default function AddEventPage() {
           return (
             <section key={group} className="space-y-3">
               <h2 className="text-sm font-semibold text-neutral-900 tracking-tight">
-                {group}
+                {groupLabel(group)}
               </h2>
               <div className="grid grid-cols-4 gap-3">
                 {cats.map((c) => (
