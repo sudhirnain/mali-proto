@@ -5,6 +5,8 @@ import Image from "next/image";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { TODAY_DATE, type Entry } from "@/lib/mock-entries";
 import { useEntries } from "@/lib/journal-store";
+import { usePhase } from "@/lib/phase";
+import { categoriesForPhase } from "@/lib/categories";
 import { JournalEntryCard } from "@/components/JournalEntryCard";
 import { EmptyState } from "@/components/EmptyState";
 import { PrimaryFAB } from "@/components/PrimaryFAB";
@@ -21,7 +23,12 @@ export default function CalendarPage() {
   const [cursor, setCursor] = useState(() => new Date(TODAY_DATE.getFullYear(), TODAY_DATE.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState<Date>(TODAY_DATE);
 
-  const allEntries = useEntries();
+  const { phase } = usePhase();
+  const rawEntries = useEntries();
+  const allEntries = useMemo(() => {
+    const ids = new Set(categoriesForPhase(phase).map((c) => c.id));
+    return rawEntries.filter((e) => ids.has(e.categoryId));
+  }, [rawEntries, phase]);
   const cells = useMemo(() => buildMonthCells(cursor), [cursor]);
   const entriesByDay = useMemo(() => groupByDayKey(allEntries), [allEntries]);
 
