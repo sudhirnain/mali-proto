@@ -82,15 +82,30 @@ export function getCategory(id: string): Category | undefined {
 }
 
 /**
- * Tile accent color. Mom-experience categories (`forMom`) all render coral so
- * the "Mom's wellbeing" track reads as one pink group regardless of each
- * category's own domain color (Jonas round-2 s13: "My Weight, My Mood, My …
- * make it all pink"). Uses the non-flipping `--color-coral*` so it stays pink
- * in parenting too. Applies to tile/quick-log surfaces only — entry rows and
- * charts keep the per-category domain color.
+ * Tile accent color — colored by DOMAIN, not per-category, so every labelled
+ * section reads as one coherent color block instead of a scatter of per-category
+ * hues that looks random in aggregate. Keyed off the composer `group`, but Food
+ * and Activity share one green: the Moments "Care logs" section merges both
+ * composer groups, so they must match or that section splits two-tone. (Food +
+ * Activity is the only cross-surface merge — every other section maps 1:1.)
+ * Mom-experience categories (`forMom`) override to coral so "Mom's wellbeing"
+ * is one pink group across both phases (Jonas round-2 s13 "make it all pink"),
+ * using the non-flipping `--color-coral*` so it stays pink in parenting too.
+ * Entry rows + charts keep the per-category `cat.color` for data legibility —
+ * this only affects tiles.
  */
+const TILE_GROUP_COLOR: Partial<Record<CategoryGroup, string>> = {
+  Memories: "cat-memory", // taupe
+  Food: "cat-food", // green ┐ both = "Care logs" in Moments —
+  Activity: "cat-food", // green ┘ share one color so that section stays coherent
+  "Growth rate": "cat-growth", // rose
+  Health: "cat-health", // blue
+  Pregnancy: "cat-contractions", // brick red
+};
+
 export function tileColor(cat: Category): string {
-  return cat.forMom ? "coral" : cat.color;
+  if (cat.forMom) return "coral";
+  return TILE_GROUP_COLOR[cat.group] ?? cat.color;
 }
 
 export function categoriesForPhase(phase: Phase): Category[] {
@@ -154,6 +169,7 @@ export const JOURNAL_SECTIONS_PARENTING: JournalSection[] = [
   { id: "development", label: "Development", categoryIds: ["weight-baby", "length", "head"], hero: "milestones" },
   { id: "care", label: "Care logs", categoryIds: ["nursing", "bottle", "solids", "pumping", "diaper", "sleep", "stroll", "bathing"] },
   { id: "health", label: "Health", categoryIds: ["mood", "doctor", "vaccinations", "temperature", "illnesses", "medications"] },
+  { id: "wellbeing", label: "Mom's wellbeing", categoryIds: ["weight-mom", "mom-mood", "symptoms", "hydration", "sleep-mom"] },
 ];
 
 export const JOURNAL_SECTIONS_PREGNANCY: JournalSection[] = [
