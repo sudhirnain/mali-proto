@@ -307,7 +307,7 @@ function JournalCold() {
             <Image
               src={
                 phase === "parenting"
-                  ? "/mali-illustrations/pregnant_9.png"
+                  ? "/mali-illustrations/happy_hands_up_baby.png"
                   : "/mali-illustrations/belly_heart_illustration.png"
               }
               alt=""
