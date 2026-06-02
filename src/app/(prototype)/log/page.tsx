@@ -109,10 +109,10 @@ export default function AddEventPage() {
       <div className="px-4 space-y-7">
         {/* Right now — the phase's most-logged categories */}
         <section className="bg-[var(--color-primary-softer)] rounded-2xl p-4 space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold text-[var(--color-primary-dark)] tracking-tight inline-flex items-center gap-1.5">
-              <span aria-hidden>✦</span> Right now
-            </h2>
+          {/* Jonas s14: the "✦ Right now" title is CROSSED OUT on the slide (an
+              X drawn over it) — only the small usage caption remains. Don't
+              re-add a heading here. */}
+          <div className="flex items-baseline justify-end">
             <span className="text-[10px] uppercase tracking-wider text-neutral-500">
               based on your use
             </span>
