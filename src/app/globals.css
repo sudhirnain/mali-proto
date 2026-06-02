@@ -4,20 +4,25 @@
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
 
-  /* Mali brand — pregnancy palette */
-  --color-coral: #e76f66;
-  --color-coral-dark: #c8554c;
-  --color-coral-soft: #f8c2b6;
-  --color-coral-softer: #fce9dd;
-  --color-coral-bright: #f4a89c;
-  --color-cream: #fdf7f1;
+  /* Mali brand — production palette, extracted from mali-2.9.4.apk
+     resources.arsc + webview CSS (2026-06-02, Sudhir's call to adopt as
+     default). APK resource names in comments; tokens marked "derived" have
+     no production counterpart and are computed from the attested ones. */
 
-  /* Mali brand — parenting palette */
-  --color-teal: #3a9090;
-  --color-teal-dark: #2c7373;
-  --color-teal-soft: #aed1cf;
-  --color-teal-softer: #d6e6e4;
-  --color-teal-bright: #75b5b2;
+  /* Pregnancy palette */
+  --color-coral: #f08180; /* pink_froly — also production link color */
+  --color-coral-dark: #d14747; /* maliRed */
+  --color-coral-soft: #f2b8b8; /* mildPeach */
+  --color-coral-softer: #fbdfdf; /* pink_azalea */
+  --color-coral-bright: #f4a7a6; /* derived: froly lightened */
+  --color-cream: #fdf6ee; /* orange_old_lace / milestone_background */
+
+  /* Parenting palette */
+  --color-teal: #2c746d; /* green_paradiso — EY screens */
+  --color-teal-dark: #20544e; /* derived: paradiso darkened */
+  --color-teal-soft: #cedfdd; /* green_light */
+  --color-teal-softer: #e8f0ee; /* derived: green_light lightened */
+  --color-teal-bright: #76a5a0; /* derived: paradiso lightened */
 
   /* Category colors. The cool-family tracks (sleep/care/health/mood) were once
      four near-identical purples; pulled apart into a distinct cool spectrum so
