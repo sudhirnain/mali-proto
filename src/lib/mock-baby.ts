@@ -28,8 +28,11 @@ export type Baby = {
   sizeFruit?: string; // pregnancy only
   /**
    * Animal size comparison (Jonas s3 "Add baby image as animal" + the ladybug
-   * mock). Emoji is a stand-in until Junporn's animal art lands — the week→
-   * animal map is theirs to finalize; these are length-plausible placeholders.
+   * mock). UNSEEDED for now: production Mali uses produce, not animals —
+   * mali.me week-32 says "the size of a kale leaf" (TH: คะน้าใบหยัก), week-24
+   * "a corn" (site-verified 2026-06-02). A culturally-right week→animal map +
+   * art must come from Mali; set this field once they provide it and
+   * JourneyHero switches over automatically.
    */
   sizeAnimal?: { label: string; emoji: string }; // pregnancy only
   weekLabel?: string; // pregnancy only
@@ -59,9 +62,8 @@ export const BABIES: Record<Phase, Baby> = {
     length: "—",
     // sizeFruit must match what /mali-art/weekly/wN.png actually shows so
     // the floating size-of pill and the center hero illustration agree.
-    // Week 32 art = bunch of kale. (Production art owns the week→item map.)
-    sizeFruit: "bunch of kale",
-    sizeAnimal: { label: "raccoon", emoji: "🦝" }, // ~42 cm at week 32
+    // Week 32 art = kale; production copy (mali.me) says "kale leaf".
+    sizeFruit: "kale leaf",
     weekLabel: "Week 32",
     week: 32,
     // Computed at module-load so today reads as Week 32 · Day 4 with a
@@ -95,7 +97,6 @@ export const FIRST_DAY_BABIES: Record<Phase, Baby> = {
     length: null,
     // Week 24 art = ear of corn. See note above on BABIES.pregnancy.sizeFruit.
     sizeFruit: "ear of corn",
-    sizeAnimal: { label: "rabbit", emoji: "🐰" }, // ~30 cm at week 24
     weekLabel: "Week 24",
     week: 24,
     dueDate: dueDateForGestation(24, 1),

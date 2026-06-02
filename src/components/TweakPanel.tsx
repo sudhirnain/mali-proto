@@ -71,6 +71,22 @@ const EDITABLE_VARS: string[] = [
   ]),
 ];
 
+/**
+ * Production palette extracted from mali-2.9.4.apk resources.arsc
+ * (2026-06-02), cross-checked against the in-app webview CSS (links
+ * #f08180, body text #595959). Only directly-attested values — tokens
+ * without a clear production counterpart (teal-dark/-softer) are left as
+ * shipped. APK resource names in comments.
+ */
+const APK_PRESET: Record<string, string> = {
+  "--color-coral": "#f08180", // pink_froly (+ CSS link color)
+  "--color-coral-dark": "#d14747", // maliRed
+  "--color-coral-soft": "#f2b8b8", // mildPeach
+  "--color-coral-softer": "#fbdfdf", // pink_azalea
+  "--color-teal": "#2c746d", // green_paradiso (EY screens)
+  "--color-teal-soft": "#cedfdd", // green_light
+};
+
 function readStored(): Record<string, string> {
   try {
     const raw: Record<string, string> = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
@@ -206,6 +222,15 @@ export function TweakPanel() {
     injectOverrides({});
   };
 
+  const applyApkPreset = () => {
+    setOverrides((curr) => {
+      const next = { ...curr, ...APK_PRESET };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      injectOverrides(next);
+      return next;
+    });
+  };
+
   const valueOf = (cssVar: string) => overrides[cssVar] ?? defaults[cssVar] ?? "";
   const dirty = Object.keys(overrides).length > 0;
 
@@ -295,6 +320,15 @@ export function TweakPanel() {
           })}
         </div>
       </details>
+
+      <button
+        onClick={applyApkPreset}
+        className="flex items-baseline justify-between text-left text-[12px] px-2.5 py-1.5 rounded-lg text-neutral-700 hover:bg-neutral-100 transition"
+        title="Brand colors extracted from the production Android app (resources.arsc + webview CSS)"
+      >
+        <span className="font-medium">Use Mali app palette</span>
+        <span className="text-[10px] text-neutral-400">from APK</span>
+      </button>
 
       <div className="flex items-center justify-between px-1.5">
         <p className="text-[10px] text-neutral-400 leading-snug pr-2">

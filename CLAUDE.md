@@ -72,6 +72,10 @@ The system: `--color-primary*` CSS variables resolve to coral at `:root`, teal u
 
 Components consume via `bg-[var(--color-primary)]` / `text-[var(--color-primary-dark)]` / etc. — never hardcoded `bg-coral` (except the deliberate `--color-coral` MOM-badge case above), so future palette tweaks land in one place.
 
+**Production palette reference (extracted from mali-2.9.4.apk resources.arsc + webview CSS, 2026-06-02):** froly `#f08180` (their pink/coral + link color), maliRed `#d14747`, mildPeach `#f2b8b8`, azalea `#fbdfdf`, paradiso teal `#2c746d` (EY screens), green_light `#cedfdd`, cream/old-lace `#fdf6ee`, body text `#595959`; serif = Crimson Pro, Thai = Sarabun. Full table: `mali-source/notes/apk-brand-colors.md` (gitignored). Our tokens deliberately differ (ours warmer); the Adjust panel's **"Use Mali app palette"** preset applies the attested subset for comparison — don't change the shipped tokens to production values without Sudhir's call.
+
+**Week-size comparisons are PRODUCE in production, not animals** (site-verified 2026-06-02: w32 = "kale leaf" / TH คะน้าใบหยัก, w24 = "a corn"). The s3 baby-as-animal ask is blocked on Mali defining a week→animal map + art; `baby.sizeAnimal` stays in the type as the ready hook, unseeded. Don't re-seed placeholder animals — the raccoon was rejected as not culturally right.
+
 Categories keep their own colors (sleep = purple, nursing = green, diaper = amber, milestone = teal, etc.) — those are per-category, not per-phase. **Pregnancy-track categories alias the brand tokens** (2026-06-02 tightening, zero pixel change): `cat-kicks` = `var(--color-coral)`, `cat-kicks-soft` = coral-soft, `cat-contractions` = coral-dark, `cat-milestone` = coral — declared as var() refs in BOTH the `@theme` and `:root` copies of globals.css. Don't re-inline those hexes; edit the brand token instead. The Adjust panel shows them as "= coral" chips, not inputs.
 
 Phase distinction now comes from **content**, not chrome: StatStrip subject (Mom vs Lu), default quick-logs (mom-experience vs baby-care), MilestoneHero (parenting) vs JourneyHero (pregnancy), MyWeekCard appears only in pregnancy.
