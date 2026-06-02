@@ -1,12 +1,14 @@
 # Handoff — Mali journal redesign
 
-Last updated: **2026-05-28**.
+Last updated: **2026-06-02** (end of round-2 session 3). The auto-memory (`~/.claude/projects/.../memory/MEMORY.md`) is the living pickup doc — this file is the coarser summary.
 
-For project conventions read [CLAUDE.md](CLAUDE.md) first. For the screen-by-screen redesign spec read [SPEC.md](SPEC.md). This file is the **"what state is the project in right now"** pickup doc.
+For project conventions read [CLAUDE.md](CLAUDE.md) first. For the screen-by-screen redesign spec read [SPEC.md](SPEC.md).
 
 ## TL;DR
 
-Pregnancy header is compact. Photo attach is on most entry forms. Sticky timer chip works across navigation. Deployed to `mali-proto.vercel.app` — **deployment protection being lifted today** (Sudhir is flipping it in the dashboard). The May-28 review deck arrived and has been fully reconciled into [SPEC.md](SPEC.md); ~17 new build items are queued. A follow-up Jonas email on 2026-05-28 evening **re-opened the pink-only decision** as an opinion question (drafted reply, awaiting Sudhir to send) and **confirmed custom milestones as BUILD** (date / image / title / notes → checkbox in overview).
+**Round-2 feedback slides 3–17 are CLOSED and fully deployed** (HEAD `f36b110` live on `mali-proto.vercel.app`, no protection wall). The deck is now `mali-source/Mali 2026 New Journal.pptx` — Jonas comments on it live; re-pull before reviewing, and **view slide images, not just text** (drawn X-marks are feedback — the crossed-out "Right now" heading took 7 review rounds because text-only extraction can't see shapes). Decisions locked: **A1 = keep teal** parenting chrome (mom elements coral); tiles color by **domain** (Food+Activity share green); icons in tiles, cartoons only on detail heroes. Still open in 3–17: **s10** article reader, **s12** legacy-graphs-as-images, **s15** icon-weight rule (partial), **s3** baby-as-animal image (asset-blocked on Jonas). Slides 18+ deliberately not started. Chrome MCP is connected but every browser action is denied by the extension's agent-permission layer — visual QA still runs through Sudhir's screenshots.
+
+> The sections below are from 2026-05-28 and largely superseded — most queued items shipped. Kept for history; trust memory + SPEC Part B2 instead.
 
 ## What's shipped (✅)
 
