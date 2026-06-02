@@ -681,15 +681,19 @@ function KicksForm({ cat }: { cat: Category }) {
 
       <div className="text-xs text-neutral-500">Last session: {MOCK_KICK_SESSIONS[0].kicks} kicks, {MOCK_KICK_SESSIONS[0].durationMin} min</div>
 
-      <DoneBar
-        onDone={() => {
-          if (count <= 0) {
-            router.back();
-            return;
-          }
-          save({ meta: `${count} kicks, ${elapsedMin} min`, durationMin: elapsedMin });
-        }}
-      />
+      {/* Hidden once the goal is reached — KickCelebration owns the terminal
+          save then, so two save affordances can't both fire (dupe entry). */}
+      {!reached && (
+        <DoneBar
+          onDone={() => {
+            if (count <= 0) {
+              router.back();
+              return;
+            }
+            save({ meta: `${count} kicks, ${elapsedMin} min`, durationMin: elapsedMin });
+          }}
+        />
+      )}
 
       {/* Slide 17 comment: "Can we add positive feedback upon completion?"
        *  Celebration overlay when the 10-kick goal is reached — copy lifted
