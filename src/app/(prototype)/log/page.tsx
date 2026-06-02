@@ -52,6 +52,16 @@ export default function AddEventPage() {
   const entries = useEntries();
   const groups = categoriesByGroup(phase);
 
+  // Jonas 2026-06-02: during pregnancy, preview the baby-tracking categories that
+  // unlock after birth — shown below the menu, greyed + non-clickable so users
+  // know it's coming ("blend it out").
+  const comingSoon =
+    phase === "pregnancy"
+      ? categoriesForPhase("parenting").filter(
+          (c) => !c.phases.includes("pregnancy") && c.group !== "Memories",
+        )
+      : [];
+
   // "Right now" = the 4 categories this phase logs the most. Count entries per
   // category (restricted to this phase's catalog), rank by frequency, then
   // backfill from the phase fallback pool so the grid never shows fewer than 4.
@@ -172,6 +182,37 @@ export default function AddEventPage() {
             </section>
           );
         })}
+
+        {comingSoon.length > 0 && (
+          <section className="space-y-3" aria-hidden>
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-900 tracking-tight">
+                After your baby arrives
+              </h2>
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                A peek at what you&rsquo;ll track once baby is born.
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-3 opacity-50 grayscale pointer-events-none select-none">
+              {comingSoon.map((c) => (
+                <div key={c.id} className="flex flex-col items-center gap-1.5">
+                  <div
+                    className="w-14 h-14 rounded-full flex items-center justify-center"
+                    style={{
+                      backgroundColor: `var(--color-${tileColor(c)}-soft)`,
+                      color: `var(--color-${tileColor(c)})`,
+                    }}
+                  >
+                    <Illustration name={c.iconName} className="w-8 h-8" />
+                  </div>
+                  <div className="text-xs font-medium text-neutral-500 text-center leading-tight">
+                    {c.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
