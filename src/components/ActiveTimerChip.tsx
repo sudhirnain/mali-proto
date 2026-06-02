@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useActiveTimer } from "@/lib/active-timer";
 import { getCategory } from "@/lib/categories";
 import { Illustration } from "./Illustration";
@@ -14,7 +15,10 @@ import { Illustration } from "./Illustration";
  */
 export function ActiveTimerChip() {
   const { timers } = useActiveTimer();
-  if (timers.length === 0) return null;
+  const pathname = usePathname();
+  // Hide on entry-form routes (/log/<category>) — those have a sticky Save bar
+  // pinned to the bottom that the centered chip would collide with.
+  if (timers.length === 0 || pathname?.startsWith("/log/")) return null;
 
   return (
     <div className="absolute left-1/2 -translate-x-1/2 bottom-20 z-40 flex flex-col-reverse items-center gap-2">

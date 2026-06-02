@@ -12,7 +12,7 @@ import {
   type MilestoneCategory,
 } from "@/lib/mock-milestones";
 import { useJournalStore } from "@/lib/journal-store";
-import { milestoneArt } from "@/lib/milestone-art";
+import { milestoneArtOrFallback } from "@/lib/milestone-art";
 
 const BUCKETS: { id: AgeBucket; label: string }[] = [
   { id: "0-3", label: "0 – 3 months" },
@@ -99,7 +99,7 @@ export function MilestonesBrowser() {
 }
 
 function MilestoneTile({ milestone, done }: { milestone: Milestone; done: boolean }) {
-  const art = milestoneArt(milestone.id);
+  const art = milestoneArtOrFallback(milestone.id);
   return (
     <Link
       href={`/journal/category/milestone/${milestone.id}`}

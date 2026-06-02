@@ -4,6 +4,7 @@ Self-contained reference for the redesign. Built by reconciling:
 - **Jonas's email** (May 27, 2026) — 7-item review list, attached pregnancy header mock
 - **May 28 meeting transcript** — [mali-source/feedback.txt](mali-source/feedback.txt), Sudhir + Jonas walking the deck together
 - **Deck v2** — [mali-source/feedback.pptx](mali-source/feedback.pptx), 56 slides, 38 active comments by Jonas (May 22–28). Extracted text + comments at [mali-source/deck-extracted.txt](mali-source/deck-extracted.txt)
+- **Deck v3 (Round 2)** — [mali-source/feedback02.pptx](mali-source/feedback02.pptx), 66 slides, Jonas comments + on-slide annotations (2026-06-01). Slides 3–15 captured in **Part B2** below.
 - **Existing prototype** at https://mali-proto.vercel.app and on disk
 
 > **Convention on sharing the deck**: PDF export drops comments. PPTX preserves them. To share with anyone who needs the comment thread, send the .pptx (current path: `mali-source/feedback.pptx`) or share the Google link with comment access on. Inside Chrome MCP I can read both.
@@ -588,6 +589,58 @@ Annotation arrow → quote card → *"Nice idea!"* — Jonas approves the inline
 
 ---
 
+## Part B2 — Round 2 deck (feedback02.pptx, 2026-06-01)
+
+Second review pass from Jonas. **Slide numbers here are from `feedback02.pptx` and do NOT match Part B** (a different, 66-slide deck). Single author (Jonas Lenz Koblin); feedback is a mix of pinned comments and text typed directly onto slides. This batch covers slides 3–15 (reviewed 2026-06-02).
+
+**Build status (2026-06-02):** s3, s4, s5, s6, s8, s11, s13, s14 are **BUILT** (production build green; visual QA was code-review-only — Chrome MCP was unavailable). s7 = FAB-visibility built; "replicate card from Feed" deferred (ambiguous). **s13 pink = surgical**: only the MOM badge was made coral (`--color-coral`); the global `[data-phase="parenting"]` teal override remains — full pink-only (A1) is still an open decision. Still DECIDE/not built: **s10** (article reader), **s12** (image-only legacy graphs), **s15** (icon-vs-drawing rule).
+
+### R2 s3 — Feed header
+- **BUILD.** Due-date element should be a **link** (*"see right"*) — same ask as A5b; reinforces making the right-ring due date tappable.
+- **BUILD.** Add a **baby-as-animal image** to the header plus the line *"Baby is the size of xxx"* — carries the weekly-hero "size of" framing onto the feed.
+- **BUILD.** A header element should **collapse on scroll** — *"Make this disappear when scrolling down (we prefer not to have it)."* Extends the existing scroll-collapse behavior (Part B, round-1 slide 9).
+
+### R2 s4 — Timer screens (roll new form everywhere)
+- **BUILD.** *"A lot of screens still have the old timer, we prefer the new one / SLEEP."* Roll the retro **start/end** SleepForm pattern out to **every** timer category (nursing, bottle, pumping, stroll, bathing — all still `TimerForm`). Rationale: *"you can't add historic data"* on the old timer. Only `sleep`/`sleep-mom` use the new form today ([log/[category]/page.tsx](src/app/(prototype)/log/%5Bcategory%5D/page.tsx), `SleepForm` vs `TimerForm`).
+
+### R2 s5 — Sleep entry form
+- **BUILD.** Simplify field styling — *"Current design we have lines around entry fields"* vs *"MY BABY looks more simple."* Lighten/remove the boxed borders on Start/End.
+- **BUILD.** Make **Save always visible** — in My Baby *"the SAVE is always visible"*; ours only appears after scrolling. Pin/stick the SaveBar. Also clarify the CTA (*"Does this CTA be more clear?"*).
+
+### R2 s6 — Composer (/log)
+- **BUILD.** *"If only one category is selected, the PLUS button should open to add entry from that category."* When the journal/composer is filtered to a single category, the FAB should deep-link straight to that category's add-entry form.
+
+### R2 s7
+- **BUILD.** *"Replicate card from Feed"* (carry a feed card pattern over — confirm which card visually) and *"keep plus button big and visible at all times."*
+
+### R2 s8 — My Weight category
+- **BUILD.** Add-weight affordance isn't discoverable. *"Do you think people will see the + here, or shall we add a PLUS button … (more intuitive)"* + pinned *"Fix this."* Add a clear PLUS / FAB to log weight from the category overview.
+
+### R2 s9 — Save routing
+- **BUILD.** *"After SAVE I should come to My Weight overview."* Post-save should land on the **category overview**, not go back. ⚠️ Conflicts with the current save contract (`useSaveEntry` → `router.back()` — see CLAUDE.md "Entry form save contract"). Reconcile by routing to `/journal/category/<id>` after save instead of `back()`.
+
+### R2 s10 — Article reader
+- **DECIDE.** *"Show how we display an article."* Design the in-app article/content surface behind "Read more" (tip / quote / educational cards). No reader screen exists yet.
+
+### R2 s11 — Milestones
+- **BUILD.** *"Add default milestone drawing (which we replace with an image if it was added)."* Default each milestone to its line-art mascot; swap in the user's photo when one is attached. Art registry already exists ([milestone-art.ts](src/lib/milestone-art.ts)).
+
+### R2 s12 — Legacy growth graphs
+- **DECIDE.** *"We don't have this graph as data, but just as pictures. Can you show us how we can add this to the new design with the existing images?"* Propose how to surface image-only legacy graphs inside the new charts UI.
+
+### R2 s13 — Moments: Wellbeing section
+- **BUILD.** Rename section to **"Mom's wellbeing"**; rename tiles to first person — **"My Weight / My Mood / My …"**.
+- **BUILD.** The **MOM badges render teal** — make them **pink**. This is a color bug regardless of the A1 pink-only outcome (teal shouldn't appear). Ties to A1/A2.
+- **BUILD.** *"Reduce to one, same like MOM, so in the overview we got only one. Move it up to Health."* Collapse the duplicate mood entry (baby "Mood" section vs mom "My Mood" tile) to one, and move it up under Health.
+
+### R2 s14 — "/log" Right-now suggestions
+- **BUILD** (Jonas invited input — *"what do you think?"*). Change **"Based on time of day" → "Based on your use"** and show the **top-4 most-used** categories instead of time-of-day picks. Rationale: babies sleep/eat at irregular times, so time-of-day suggestions misfire.
+
+### R2 s15 — Icons vs illustrations
+- **DECIDE.** *"When do we use icons and when these little drawings?"* Define a usage rule (utility icons vs brand illustrations). Ties to the 3-layer Iconography system in CLAUDE.md.
+
+---
+
 ## Part C — Open questions for next Jonas check
 
 - **Pink-only color (A1)** — Jonas re-opened in follow-up email 2026-05-28 as an opinion question. Sudhir's reply drafted (leaning yes, asking about secondary accent for Mom-tracking rows in parenting). Awaiting Jonas's read on the accent sub-question.
@@ -597,6 +650,12 @@ Annotation arrow → quote card → *"Nice idea!"* — Jonas approves the inline
 - **Solids: chips vs free-text** (slide 35) — pick one.
 - **Vaccinations: short chip list + Other vs longer list** (slide 42) — confirm.
 - **Mom-weight graph in parenting**: extend the pregnancy chart, or use a tab pattern? (slide 13 comment, A2.)
+
+Round 2 (feedback02.pptx) decides:
+- **Article reader** (R2 s10) — how do we display a "Read more" article in-app? No surface exists.
+- **Legacy growth graphs** (R2 s12) — old graphs are images, not data; how to surface them in the new charts UI?
+- **Icons vs illustrations** (R2 s15) — define when to use utility icons vs brand "little drawings".
+- **Save routing** (R2 s9) — confirm post-save lands on category overview (changes the `router.back()` save contract).
 
 ## Part D — Asset and resource references
 

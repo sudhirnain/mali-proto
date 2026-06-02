@@ -63,8 +63,6 @@ export default function JournalPage() {
       <ViewTabs current="timeline" />
 
       <TimeView />
-
-      <PrimaryFAB />
     </div>
   );
 }
@@ -228,6 +226,9 @@ function TimeView() {
           <DayBucket key={dayKey} dayKey={dayKey} dayEntries={dayEntries} />
         ))}
       </div>
+
+      {/* s6 — one category filtered → the add button opens that category's form */}
+      <PrimaryFAB href={singleSelectedCat ? `/log/${singleSelectedCat.id}` : "/log"} />
     </>
   );
 }

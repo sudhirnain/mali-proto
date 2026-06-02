@@ -65,10 +65,10 @@ export const CATEGORIES: Category[] = [
   // Wellbeing — mom-experience tracks; present in BOTH phases (mom keeps
   // tracking after birth per Jonas's slide 13 + slide 29 comments).
   { id: "weight-mom", label: "My Weight", group: "Wellbeing", color: "cat-growth", formKind: "measurement", phases: ["pregnancy", "parenting"], hasGraph: true, iconName: "scale", forMom: true },
-  { id: "mom-mood", label: "Mood", group: "Wellbeing", color: "cat-mood", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "mood-fine", forMom: true },
-  { id: "symptoms", label: "Symptoms", group: "Wellbeing", color: "cat-health", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "heart-pulse", forMom: true },
-  { id: "hydration", label: "Water", group: "Wellbeing", color: "cat-care", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "bath", forMom: true },
-  { id: "sleep-mom", label: "Sleep", group: "Wellbeing", color: "cat-sleep", formKind: "timer", phases: ["pregnancy", "parenting"], iconName: "crib", forMom: true },
+  { id: "mom-mood", label: "My Mood", group: "Wellbeing", color: "cat-mood", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "mood-fine", forMom: true },
+  { id: "symptoms", label: "My Symptoms", group: "Wellbeing", color: "cat-health", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "heart-pulse", forMom: true },
+  { id: "hydration", label: "My Water", group: "Wellbeing", color: "cat-care", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "bath", forMom: true },
+  { id: "sleep-mom", label: "My Sleep", group: "Wellbeing", color: "cat-sleep", formKind: "timer", phases: ["pregnancy", "parenting"], iconName: "crib", forMom: true },
 
   // Pregnancy — baby-emergent tracks, pregnancy-only.
   { id: "kicks", label: "Kicks", group: "Pregnancy", color: "cat-kicks", formKind: "kicks", phases: ["pregnancy"], hasGraph: true, iconName: "kick" },
@@ -152,8 +152,8 @@ export const JOURNAL_SECTIONS_PREGNANCY: JournalSection[] = [
   { id: "memories", label: "Memories", categoryIds: ["note", "picture"] },
   { id: "journey", label: "Your journey", categoryIds: [], hero: "weekly-journey" },
   { id: "body", label: "Body", categoryIds: ["kicks", "contractions"] },
-  { id: "wellbeing", label: "Wellbeing", categoryIds: ["mom-mood", "symptoms", "hydration", "sleep-mom", "weight-mom"] },
-  { id: "health", label: "Health", categoryIds: ["doctor"] },
+  { id: "wellbeing", label: "Mom's wellbeing", categoryIds: ["weight-mom", "symptoms", "hydration", "sleep-mom"] },
+  { id: "health", label: "Health", categoryIds: ["mom-mood", "doctor"] },
 ];
 
 export function journalSectionsForPhase(phase: Phase): JournalSection[] {

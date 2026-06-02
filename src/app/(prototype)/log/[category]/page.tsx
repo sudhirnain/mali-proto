@@ -91,10 +91,7 @@ function CategoryIconBadge({ cat }: { cat: Category }) {
 function FormBody({ cat, editing }: { cat: Category; editing?: Entry }) {
   switch (cat.formKind) {
     case "timer":
-      if (cat.id === "sleep" || cat.id === "sleep-mom") {
-        return <SleepForm cat={cat} editing={editing} />;
-      }
-      return <TimerForm cat={cat} editing={editing} />;
+      return <TimerEntryForm cat={cat} editing={editing} />;
     case "measurement":
       return <MeasurementForm cat={cat} editing={editing} />;
     case "event":
@@ -113,8 +110,20 @@ function FormBody({ cat, editing }: { cat: Category; editing?: Entry }) {
 }
 
 /**
+ * Memory-type categories whose entries live in a mixed feed, not a single
+ * tracking overview — landing on "/journal/category/note" after a quick note
+ * would feel like a dead-end, so these fall back to router.back() (s9).
+ */
+const MEMORY_CATEGORIES = new Set(["note", "quote", "picture", "milestone"]);
+
+/**
  * Hook every form uses to actually save. New entries get a unique id; edits
  * reuse the existing id so the store replaces the record cleanly.
+ *
+ * Navigation is centralized here (per the CLAUDE.md save contract — callers
+ * never navigate): trackable categories land on their category overview so the
+ * just-saved entry is visible in context (Jonas s9: "After SAVE I should come
+ * to My Weight overview"). Memory categories go back instead (see set above).
  */
 function useSaveEntry(cat: Category, editing?: Entry) {
   const { addEntry } = useJournalStore();
@@ -127,7 +136,11 @@ function useSaveEntry(cat: Category, editing?: Entry) {
       at: editing?.at ?? new Date().toISOString(),
       ...patch,
     });
-    router.back();
+    if (MEMORY_CATEGORIES.has(cat.id)) {
+      router.back();
+    } else {
+      router.push(`/journal/category/${cat.id}`);
+    }
   };
 }
 
@@ -135,204 +148,31 @@ function useSaveEntry(cat: Category, editing?: Entry) {
 /*  Form variants                                                     */
 /* ------------------------------------------------------------------ */
 
-function TimerForm({ cat, editing }: { cat: Category; editing?: Entry }) {
-  const [side, setSide] = useState<"left" | "right" | "both">(() => parseSide(editing?.meta) ?? "right");
-  const [minutes, setMinutes] = useState(editing?.durationMin ?? 0);
-  const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
-  // Slide 27/30/34/36 — per-category form extras copied from My Baby:
-  // Sleep gets Daytime/Night, Bottle gets ml + Breast milk/Formula, Pumping
-  // gets ml + L/R/Both, all three get a Comments field.
+/**
+ * Category-adaptive timer entry form for every `formKind: "timer"` category
+ * (sleep, sleep-mom, nursing, bottle, pumping, stroll, bathing). Field-first:
+ * Start/End are the PRIMARY logging method so historic data is always
+ * enterable (Jonas s4: the old bare stopwatch couldn't add past entries).
+ *
+ * The live timer is an escape hatch — tap "Start live timer" and the running
+ * session ticks via the global ActiveTimer context (survives navigation,
+ * stacks concurrently with other categories' timers). Stopping fills the
+ * Start/End fields from the elapsed session.
+ *
+ * Per-category extras (My Baby parity, slides 27/30/34/36):
+ *   nursing/pumping → Left/Both/Right side
+ *   bottle/pumping  → Quantity (ml)
+ *   bottle          → Breast milk/Formula
+ *   sleep/sleep-mom → Daytime/Night + quick chips ("Just woke up", etc.)
+ *   sleep/bottle/pumping → Comments
+ */
+function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
+  const isSleep = cat.id === "sleep" || cat.id === "sleep-mom";
   const showSide = cat.id === "nursing" || cat.id === "pumping";
   const showQuantity = cat.id === "bottle" || cat.id === "pumping";
-  const showSleepKind = cat.id === "sleep";
   const showMilkType = cat.id === "bottle";
-  const showComments = cat.id === "sleep" || cat.id === "bottle" || cat.id === "pumping";
+  const showComments = isSleep || cat.id === "bottle" || cat.id === "pumping";
 
-  const [sleepKind, setSleepKind] = useState<"Daytime" | "Night">("Daytime");
-  const [quantityMl, setQuantityMl] = useState<number>(cat.id === "bottle" ? 120 : 90);
-  const [milkType, setMilkType] = useState<"Breast milk" | "Formula">("Breast milk");
-  const [comments, setComments] = useState<string>("");
-
-  const save = useSaveEntry(cat, editing);
-  const timer = useActiveTimer();
-
-  // Running state is derived from the global active-timer context — that
-  // way the chip and form agree even after navigation. The form drives
-  // start/stop; the context owns the elapsed-time tick.
-  const runningHere = !!timer.timerFor(cat.id);
-  const liveMinutes = runningHere ? Math.max(1, Math.floor(timer.elapsedSec(cat.id) / 60)) : minutes;
-
-  const onToggle = () => {
-    if (runningHere) {
-      const mins = timer.stop(cat.id);
-      setMinutes(mins);
-    } else {
-      timer.start(cat.id);
-    }
-  };
-
-  return (
-    <div className="space-y-5">
-      <div className="text-center">
-        <div className="serif text-4xl font-semibold text-neutral-900 tabular-nums">
-          {runningHere ? formatTimerLive(timer.elapsedSec(cat.id)) : formatTimerClock(minutes)}
-        </div>
-        <div className="text-xs text-neutral-500 mt-1">
-          {editing ? "Editing entry" : runningHere ? "Running — keeps going if you navigate away" : "Tap Start to begin"}
-        </div>
-      </div>
-
-      {showSleepKind && (
-        <div className="bg-neutral-50 rounded-full p-1 flex">
-          {(["Daytime", "Night"] as const).map((k) => (
-            <button
-              key={k}
-              onClick={() => setSleepKind(k)}
-              className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${
-                sleepKind === k ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
-              }`}
-            >
-              {k}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {showSide && (
-        <div className="bg-neutral-50 rounded-full p-1 flex">
-          {(["left", "both", "right"] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setSide(s)}
-              className={`flex-1 capitalize text-sm font-semibold py-2 rounded-full transition ${
-                side === s ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {showQuantity && (
-        <Field label="Quantity (ml)">
-          <input
-            type="number"
-            inputMode="numeric"
-            value={quantityMl}
-            min={0}
-            step={10}
-            onChange={(e) => setQuantityMl(Number(e.target.value) || 0)}
-            className="w-full text-base border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] tabular-nums"
-          />
-        </Field>
-      )}
-
-      {showMilkType && (
-        <div className="bg-neutral-50 rounded-full p-1 flex">
-          {(["Breast milk", "Formula"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMilkType(m)}
-              className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${
-                milkType === m ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onToggle}
-          className="flex-1 py-3 rounded-full text-white font-semibold text-base"
-          style={{ backgroundColor: `var(--color-${cat.color})` }}
-        >
-          {runningHere ? "Stop" : minutes > 0 ? "Resume" : "Start"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setMinutes((m) => m + 5)}
-          className="px-4 py-3 rounded-full bg-neutral-100 text-neutral-700 text-sm font-semibold"
-          aria-label="Add 5 minutes"
-        >
-          +5
-        </button>
-      </div>
-
-      {showComments && (
-        <Field label="Comments (optional)">
-          <textarea
-            rows={2}
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            placeholder="Anything you want to remember?"
-            className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
-          />
-        </Field>
-      )}
-
-      <PhotoAttachField photo={photo} onChange={setPhoto} />
-
-      <SaveBar
-        cat={cat}
-        editing={editing}
-        onSave={() => {
-          const finalMin = runningHere ? timer.stop(cat.id) : liveMinutes || 1;
-          const dur = formatDurationShort(finalMin);
-          const parts: string[] = [dur];
-          if (showSleepKind) parts.push(sleepKind);
-          if (showQuantity) parts.push(`${quantityMl}ml`);
-          if (showMilkType) parts.push(milkType);
-          if (showSide) parts.push(side);
-          const note = comments.trim();
-          const baseMeta = parts.join(", ");
-          save({
-            durationMin: finalMin,
-            meta: note ? `${baseMeta} — ${note}` : baseMeta,
-            photo,
-          });
-        }}
-      />
-    </div>
-  );
-}
-
-function formatTimerLive(sec: number): string {
-  const m = Math.floor(sec / 60).toString().padStart(2, "0");
-  const s = (sec % 60).toString().padStart(2, "0");
-  return `${m}:${s}`;
-}
-
-function parseSide(meta?: string): "left" | "right" | "both" | null {
-  if (!meta) return null;
-  if (/right/i.test(meta)) return "right";
-  if (/left/i.test(meta)) return "left";
-  if (/both/i.test(meta)) return "both";
-  return null;
-}
-
-function formatTimerClock(min: number): string {
-  const m = Math.floor(min);
-  const s = Math.round((min - m) * 60);
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-}
-
-function formatDurationShort(min: number): string {
-  if (min < 60) return `${min} min`;
-  const h = Math.floor(min / 60);
-  const rem = min % 60;
-  return rem === 0 ? `${h} h` : `${h} h ${rem} min`;
-}
-
-/**
- * Field-first sleep entry (sleep + sleep-mom). Optimized for retro logging
- * ("baby slept 2pm-3:30pm") over live tracking. Live tracking still works via
- * the sticky ActiveTimer chip path on other timer categories.
- */
-function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const defaultEnd = editing?.at ? new Date(editing.at) : new Date();
   const defaultStart = editing?.durationMin
     ? new Date(defaultEnd.getTime() - editing.durationMin * 60000)
@@ -341,6 +181,9 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const [start, setStart] = useState<Date>(defaultStart);
   const [end, setEnd] = useState<Date>(defaultEnd);
   const [sleepKind, setSleepKind] = useState<"Daytime" | "Night">(inferSleepKind(defaultStart));
+  const [side, setSide] = useState<"left" | "right" | "both">(() => parseSide(editing?.meta) ?? "right");
+  const [quantityMl, setQuantityMl] = useState<number>(() => parseMl(editing?.meta) ?? (cat.id === "bottle" ? 120 : 90));
+  const [milkType, setMilkType] = useState<"Breast milk" | "Formula">(() => (/formula/i.test(editing?.meta ?? "") ? "Formula" : "Breast milk"));
   const [comments, setComments] = useState<string>("");
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
 
@@ -349,12 +192,13 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const liveTimer = timer.timerFor(cat.id);
   const runningHere = !!liveTimer;
 
+  const accent = `var(--color-${cat.color})`;
   const fieldDurationMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
   const invalid = !runningHere && end.getTime() <= start.getTime();
 
   useEffect(() => {
-    if (!runningHere) setSleepKind(inferSleepKind(start));
-  }, [start, runningHere]);
+    if (isSleep && !runningHere) setSleepKind(inferSleepKind(start));
+  }, [start, runningHere, isSleep]);
 
   const applyChip = (key: "just-woke" | "earlier" | "last-night") => {
     const now = new Date();
@@ -387,7 +231,7 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
       <div className="text-center">
         <div
           className="serif text-4xl font-semibold tabular-nums"
-          style={{ color: runningHere ? "var(--color-cat-sleep)" : undefined }}
+          style={{ color: runningHere ? accent : undefined }}
         >
           {runningHere
             ? formatTimerLive(timer.elapsedSec(cat.id))
@@ -400,11 +244,13 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
             ? "Running — keeps going if you navigate away"
             : invalid
               ? "End must be after start"
-              : `${sleepKind} sleep`}
+              : isSleep
+                ? `${sleepKind} sleep`
+                : `${cat.label} duration`}
         </div>
       </div>
 
-      {!runningHere && (
+      {isSleep && !runningHere && (
         <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
           {([
             { k: "just-woke", l: "Just woke up" },
@@ -442,10 +288,7 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
           onClick={() => timer.start(cat.id)}
           className="w-full text-sm font-medium px-3.5 py-2.5 rounded-full border border-neutral-200 bg-white text-neutral-700 active:bg-neutral-50 inline-flex items-center justify-center gap-2"
         >
-          <span
-            className="inline-block w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: "var(--color-cat-sleep)" }}
-          />
+          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accent }} />
           Start live timer
         </button>
       )}
@@ -454,36 +297,62 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
           type="button"
           onClick={stopLive}
           className="w-full text-sm font-semibold px-3.5 py-2.5 rounded-full border-2 bg-white inline-flex items-center justify-center gap-2"
-          style={{ borderColor: "var(--color-cat-sleep)", color: "var(--color-cat-sleep)" }}
+          style={{ borderColor: accent, color: accent }}
         >
           Stop &amp; fill end time
         </button>
       )}
 
-      <div className="bg-neutral-50 rounded-full p-1 flex">
-        {(["Daytime", "Night"] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setSleepKind(k)}
-            className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${
-              sleepKind === k ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
-            }`}
-          >
-            {k}
-          </button>
-        ))}
-      </div>
-
-      <Field label="Comments (optional)">
-        <textarea
-          rows={2}
-          value={comments}
-          onChange={(e) => setComments(e.target.value)}
-          placeholder="Anything you want to remember?"
-          className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
+      {isSleep && (
+        <SegmentedToggle
+          options={["Daytime", "Night"] as const}
+          value={sleepKind}
+          onChange={setSleepKind}
         />
-      </Field>
+      )}
+
+      {showSide && (
+        <SegmentedToggle
+          options={["left", "both", "right"] as const}
+          value={side}
+          onChange={setSide}
+          capitalize
+        />
+      )}
+
+      {showQuantity && (
+        <Field label="Quantity (ml)">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={quantityMl}
+            min={0}
+            step={10}
+            onChange={(e) => setQuantityMl(Number(e.target.value) || 0)}
+            className={`${INPUT_CLASS} text-base tabular-nums`}
+          />
+        </Field>
+      )}
+
+      {showMilkType && (
+        <SegmentedToggle
+          options={["Breast milk", "Formula"] as const}
+          value={milkType}
+          onChange={setMilkType}
+        />
+      )}
+
+      {showComments && (
+        <Field label="Comments (optional)">
+          <textarea
+            rows={2}
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            placeholder="Anything you want to remember?"
+            className={`${INPUT_CLASS} text-sm resize-none`}
+          />
+        </Field>
+      )}
 
       <PhotoAttachField photo={photo} onChange={setPhoto} />
 
@@ -499,12 +368,17 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
             finalEnd = new Date();
           }
           const finalMin = Math.max(1, Math.round((finalEnd.getTime() - finalStart.getTime()) / 60000));
-          const base = `${formatDurationShort(finalMin)}, ${sleepKind}`;
+          const parts: string[] = [formatDurationShort(finalMin)];
+          if (isSleep) parts.push(sleepKind);
+          if (showQuantity) parts.push(`${quantityMl}ml`);
+          if (showMilkType) parts.push(milkType);
+          if (showSide) parts.push(side);
+          const baseMeta = parts.join(", ");
           const note = comments.trim();
           save({
             at: finalEnd.toISOString(),
             durationMin: finalMin,
-            meta: note ? `${base} — ${note}` : base,
+            meta: note ? `${baseMeta} — ${note}` : baseMeta,
             photo,
           });
         }}
@@ -513,10 +387,76 @@ function SleepForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   );
 }
 
+/** Pill segmented control shared by every timer-form choice (side, milk, sleep kind). */
+function SegmentedToggle<T extends string>({
+  options,
+  value,
+  onChange,
+  capitalize,
+}: {
+  options: readonly T[];
+  value: T;
+  onChange: (v: T) => void;
+  capitalize?: boolean;
+}) {
+  return (
+    <div className="bg-neutral-100 rounded-full p-1 flex">
+      {options.map((o) => (
+        <button
+          key={o}
+          type="button"
+          onClick={() => onChange(o)}
+          className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${capitalize ? "capitalize" : ""} ${
+            value === o ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
+          }`}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function formatTimerLive(sec: number): string {
+  const m = Math.floor(sec / 60).toString().padStart(2, "0");
+  const s = (sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function parseSide(meta?: string): "left" | "right" | "both" | null {
+  if (!meta) return null;
+  if (/right/i.test(meta)) return "right";
+  if (/left/i.test(meta)) return "left";
+  if (/both/i.test(meta)) return "both";
+  return null;
+}
+
+function parseMl(meta?: string): number | null {
+  if (!meta) return null;
+  const m = meta.match(/(\d+)\s*ml/i);
+  return m ? Number(m[1]) : null;
+}
+
+function formatDurationShort(min: number): string {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const rem = min % 60;
+  return rem === 0 ? `${h} h` : `${h} h ${rem} min`;
+}
+
 function inferSleepKind(d: Date): "Daytime" | "Night" {
   const h = d.getHours();
   return h >= 19 || h < 6 ? "Night" : "Daytime";
 }
+
+/**
+ * Shared input chrome. Per Jonas s5b — the old `border border-neutral-200`
+ * outlines read as heavy "lines around every field"; My Baby is softer. These
+ * use a filled neutral-50 ground with a hairline border that only firms up on
+ * focus, so fields recede until tapped.
+ */
+const INPUT_CLASS =
+  "w-full bg-neutral-50 border border-transparent rounded-xl px-3 py-2.5 text-neutral-900 focus:outline-none focus:bg-white focus:border-[var(--color-primary)] transition";
 
 function DateTimeInput({
   value,
@@ -538,7 +478,7 @@ function DateTimeInput({
         const next = new Date(e.target.value);
         if (!isNaN(next.getTime())) onChange(next);
       }}
-      className="w-full text-base text-neutral-900 border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] tabular-nums disabled:bg-neutral-50 disabled:text-neutral-500"
+      className={`${INPUT_CLASS} text-base tabular-nums disabled:text-neutral-500`}
     />
   );
 }
@@ -570,7 +510,7 @@ function MeasurementForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   return (
     <div className="space-y-5">
       <Field label="Date">
-        <button className="w-full text-left text-sm text-neutral-900 border border-neutral-200 rounded-xl px-3 py-2.5 flex items-center justify-between">
+        <button className="w-full text-left text-sm text-neutral-900 bg-neutral-50 border border-transparent rounded-xl px-3 py-2.5 flex items-center justify-between">
           <span>Today, {formatTime(TODAY_DATE.toISOString())}</span>
           <svg viewBox="0 0 24 24" className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth={2}>
             <path d="M6 9l6 6 6-6" />
@@ -585,7 +525,7 @@ function MeasurementForm({ cat, editing }: { cat: Category; editing?: Entry }) {
           value={value}
           step="0.1"
           onChange={(e) => setValue(Number(e.target.value))}
-          className="w-full text-3xl serif font-semibold text-neutral-900 tabular-nums border-b-2 border-neutral-200 pb-2 focus:outline-none focus:border-[var(--color-primary)]"
+          className="w-full text-3xl serif font-semibold text-neutral-900 tabular-nums border-b-2 border-neutral-100 pb-2 focus:outline-none focus:border-[var(--color-primary)]"
         />
       </Field>
 
@@ -628,7 +568,7 @@ function EventForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   return (
     <div className="space-y-5">
       <Field label="When">
-        <button className="w-full text-left text-sm text-neutral-900 border border-neutral-200 rounded-xl px-3 py-2.5 flex items-center justify-between">
+        <button className="w-full text-left text-sm text-neutral-900 bg-neutral-50 border border-transparent rounded-xl px-3 py-2.5 flex items-center justify-between">
           <span>Today, {formatTime(TODAY_DATE.toISOString())}</span>
           <svg viewBox="0 0 24 24" className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth={2}>
             <path d="M6 9l6 6 6-6" />
@@ -665,7 +605,7 @@ function EventForm({ cat, editing }: { cat: Category; editing?: Entry }) {
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
+          className={`${INPUT_CLASS} text-sm resize-none`}
           placeholder={selected === OTHER_PRESET ? "What was it?" : "Anything else?"}
           autoFocus={selected === OTHER_PRESET && !note}
         />
@@ -948,7 +888,7 @@ function NoteForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   return (
     <div className="space-y-5">
       <Field label="When">
-        <button className="w-full text-left text-sm text-neutral-900 border border-neutral-200 rounded-xl px-3 py-2.5 flex items-center justify-between">
+        <button className="w-full text-left text-sm text-neutral-900 bg-neutral-50 border border-transparent rounded-xl px-3 py-2.5 flex items-center justify-between">
           <span>Today, {formatTime(TODAY_DATE.toISOString())}</span>
           <svg viewBox="0 0 24 24" className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth={2}>
             <path d="M6 9l6 6 6-6" />
@@ -965,7 +905,7 @@ function NoteForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               rows={4}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--color-primary)] resize-none"
+              className={`${INPUT_CLASS} text-sm resize-none`}
               placeholder={isQuote ? "“Something they said today...”" : "What's on your mind?"}
             />
           </Field>
@@ -990,7 +930,7 @@ function PhotoPickerSquare({ photo, onChange }: { photo?: string; onChange: (p?:
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="w-full aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-1.5 text-neutral-500 text-sm overflow-hidden active:scale-[0.99] transition"
+        className="w-full aspect-square rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 flex flex-col items-center justify-center gap-1.5 text-neutral-500 text-sm overflow-hidden active:scale-[0.99] transition"
       >
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -1068,7 +1008,7 @@ function PhotoAttachField({ photo, onChange }: { photo?: string; onChange: (p?: 
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full py-3 rounded-xl border-2 border-dashed border-neutral-200 text-sm text-neutral-500 font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition"
+          className="w-full py-3 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 text-sm text-neutral-500 font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition"
         >
           <Illustration name="camera" className="w-4 h-4" />
           <span>Attach photo</span>
@@ -1099,15 +1039,24 @@ function readFileAsDataUrl(file: File): Promise<string | undefined> {
   });
 }
 
+/**
+ * Pinned to the bottom of the form viewport so Save is always reachable
+ * without scrolling (Jonas s5a: My Baby's SAVE is always visible). Bleeds to
+ * the white card's edges (cancels the card's p-5) and sits on a white ground
+ * that fades at the top, so fields scrolling under it stay legible.
+ */
 function SaveBar({ cat, editing, onSave }: { cat: Category; editing?: Entry; onSave?: () => void }) {
   return (
-    <button
-      onClick={onSave}
-      className="w-full py-3 rounded-full text-white font-semibold text-base mt-3 active:scale-[0.98] transition"
-      style={{ backgroundColor: `var(--color-${cat.color})` }}
-    >
-      {editing ? "Save changes" : "Save"}
-    </button>
+    <div className="sticky bottom-0 -mx-5 -mb-5 px-5 pt-4 pb-5 bg-white">
+      <div className="pointer-events-none absolute inset-x-0 -top-5 h-5 bg-gradient-to-t from-white to-transparent" aria-hidden />
+      <button
+        onClick={onSave}
+        className="w-full py-3 rounded-full text-white font-semibold text-base active:scale-[0.98] transition"
+        style={{ backgroundColor: `var(--color-${cat.color})` }}
+      >
+        {editing ? "Save changes" : "Save"}
+      </button>
+    </div>
   );
 }
 

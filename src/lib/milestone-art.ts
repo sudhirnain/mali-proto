@@ -29,7 +29,22 @@ const ART: Record<string, string> = {
   "m-stranger": "File_119.png", // distressed baby covering face / crying
 };
 
+// Generic line-art baby (arms raised in celebration) shown for milestones with
+// no specific mapping — e.g. user-added custom milestones. Keeps a hand-drawn
+// illustration on every detail screen instead of a utility glyph (Jonas s11:
+// "Add default milestone drawing").
+const GENERIC_FALLBACK = "File_155.png";
+
 export function milestoneArt(id: string): string | null {
   const file = ART[id];
   return file ? `/mali-art/milestones/${encodeURIComponent(file)}` : null;
+}
+
+/** Mapped art for the milestone, or the generic fallback drawing. Always returns
+ *  a path so a line-art illustration renders even for unmapped milestones. */
+export function milestoneArtOrFallback(id: string): string {
+  return (
+    milestoneArt(id) ??
+    `/mali-art/milestones/${encodeURIComponent(GENERIC_FALLBACK)}`
+  );
 }

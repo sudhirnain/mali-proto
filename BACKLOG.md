@@ -2,6 +2,8 @@
 
 Tracks known gaps and deferred work. Items in roughly priority order. Pull from here when picking the next thing.
 
+> **Round 2 feedback (feedback02.pptx, 2026-06-01)** — Jonas's slide 3–15 review is captured as actionable items in [SPEC.md](SPEC.md) **Part B2** (not duplicated here). Highlights: roll the new start/end timer form to all categories (R2 s4), pin Save + lighten field borders (R2 s5), make MOM badges pink + rename "Mom's wellbeing" (R2 s13), "based on your use" top-4 quick-logs (R2 s14), post-save → category overview (R2 s9).
+
 ## High-value gaps for the demo
 
 - **~120 unlabeled `File_NNN.png` milestone files are uncatalogued.** Only 5 visual matches wired in `src/lib/milestone-art.ts`. The rest sit in `public/mali-art/milestones/` but Next.js doesn't ship them. To cover more milestones, eyeball the contact sheets (`/tmp/cs_0.png`..`cs_7.png` regenerable) and add registry entries. Could also seed new milestones for files with obvious meaning (File_086 "points at butterfly" → "Points at things"; File_103 "points at airplane" → similar).

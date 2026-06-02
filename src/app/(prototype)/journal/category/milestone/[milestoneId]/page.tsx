@@ -9,7 +9,7 @@ import { getMilestone, type Milestone } from "@/lib/mock-milestones";
 import { useBaby } from "@/lib/cold-mode";
 import { useJournalStore, useEntries } from "@/lib/journal-store";
 import { formatLongDate } from "@/lib/format";
-import { milestoneArt } from "@/lib/milestone-art";
+import { milestoneArtOrFallback } from "@/lib/milestone-art";
 
 type Tab = "overview" | "details" | "chart";
 
@@ -299,7 +299,7 @@ function OverviewTab({
   entryMeta?: string;
   entryPhoto?: string;
 }) {
-  const art = milestoneArt(milestone.id);
+  const art = milestoneArtOrFallback(milestone.id);
 
   // The user-added note lives after " — " in meta. Strip the label so the
   // rendered note isn't "Smiles spontaneously — Smiles spontaneously".
@@ -327,13 +327,9 @@ function OverviewTab({
             className="object-cover"
           />
         </div>
-      ) : art ? (
+      ) : (
         <div className="relative w-48 h-48 -mb-2">
           <Image src={art} alt="" fill sizes="200px" className="object-contain" />
-        </div>
-      ) : (
-        <div className="w-32 h-32 rounded-full bg-white/70 flex items-center justify-center text-[var(--color-primary-dark)] mb-4">
-          <Illustration name={milestone.iconName} className="w-16 h-16" />
         </div>
       )}
       <div className="serif text-2xl font-semibold text-[var(--color-primary-dark)] mt-4">

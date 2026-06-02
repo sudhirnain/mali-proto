@@ -73,7 +73,7 @@ export default function CategoryDetailPage() {
   }
 
   return (
-    <div className="pb-16">
+    <div className="pb-24">
       {/* Tinted header bleeds to top:0 of the phone shell (no parent pt-11
        *  in MobileFrame). md:pt-[60px] clears the fake iOS status bar. */}
       <header
@@ -91,15 +91,7 @@ export default function CategoryDetailPage() {
             </svg>
           </button>
           <h1 className="text-lg font-semibold text-neutral-900">{cat.label}</h1>
-          <Link
-            href={`/log/${cat.id}`}
-            aria-label="Add entry"
-            className="w-9 h-9 flex items-center justify-center text-neutral-800"
-          >
-            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </Link>
+          <span className="w-9" aria-hidden />
         </div>
 
         {/* Big icon + headline metric. Categories with production hero art
@@ -160,6 +152,20 @@ export default function CategoryDetailPage() {
           </section>
         ))}
       </div>
+
+      {/* Always-visible primary add control. Jonas round-2 s8 circled the
+       *  empty space on My Weight ("Fix this") and asked for an obvious +
+       *  that opens the tracking form. The header chevron-style + was too
+       *  faint, so this FAB mirrors the milestone-variant button. */}
+      <Link
+        href={`/log/${cat.id}`}
+        aria-label={`Log ${cat.label}`}
+        className="fixed bottom-24 right-5 z-40 w-14 h-14 rounded-full bg-[var(--color-primary)] text-white shadow-lg flex items-center justify-center active:scale-95 transition md:absolute md:right-5"
+      >
+        <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </Link>
     </div>
   );
 }
