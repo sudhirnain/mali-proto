@@ -531,7 +531,7 @@ function EventForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   });
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
   const save = useSaveEntry(cat, editing);
-  const isMoodPicker = cat.id === "mom-mood";
+  const isMoodPicker = cat.id === "mom-mood" || cat.id === "mood";
 
   return (
     <div className="space-y-5">
@@ -609,16 +609,25 @@ function MomMoodPicker({
   selected: string | null;
   onSelect: (v: string) => void;
 }) {
-  const moods = [
-    { id: "Cheerful", emoji: "😊" },
-    { id: "Fine", emoji: "🙂" },
-    { id: "Anxious", emoji: "😟" },
-    { id: "Overwhelmed", emoji: "😩" },
-    { id: "Grateful", emoji: "🙏" },
-    { id: OTHER_PRESET, emoji: "💭" },
-  ];
+  const isBaby = cat.id === "mood";
+  const moods = isBaby
+    ? [
+        { id: "Cheerful", emoji: "😊" },
+        { id: "Fine", emoji: "🙂" },
+        { id: "Sad", emoji: "😢" },
+        { id: "Crying", emoji: "😭" },
+        { id: OTHER_PRESET, emoji: "💭" },
+      ]
+    : [
+        { id: "Cheerful", emoji: "😊" },
+        { id: "Fine", emoji: "🙂" },
+        { id: "Anxious", emoji: "😟" },
+        { id: "Overwhelmed", emoji: "😩" },
+        { id: "Grateful", emoji: "🙏" },
+        { id: OTHER_PRESET, emoji: "💭" },
+      ];
   return (
-    <Field label="How are you?">
+    <Field label={isBaby ? "Baby's mood" : "How are you?"}>
       <div className="flex flex-wrap gap-2">
         {moods.map((m) => {
           const on = selected === m.id;
@@ -1064,11 +1073,8 @@ function presetsFor(id: string): string[] {
       return ["Fever", "Cough", "Cold", "Rash", OTHER_PRESET];
     case "medications":
       return ["Paracetamol", "Ibuprofen", "Vitamin D", OTHER_PRESET];
-    case "cheerful":
-    case "fine":
-    case "sad":
-    case "crying":
-      return [];
+    case "mood":
+      return ["Cheerful", "Fine", "Sad", "Crying", OTHER_PRESET];
 
     // Pregnancy mom-experience presets
     case "mom-mood":

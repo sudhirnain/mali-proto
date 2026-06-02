@@ -6,6 +6,7 @@ import {
   categoriesByGroup,
   categoriesForPhase,
   getCategory,
+  tileColor,
   type CategoryGroup,
 } from "@/lib/categories";
 import { usePhase, type Phase } from "@/lib/phase";
@@ -22,7 +23,6 @@ const GROUP_ORDER: CategoryGroup[] = [
   "Activity",
   "Growth rate",
   "Health",
-  "Mood",
   "Wellbeing",
   "Pregnancy",
 ];
@@ -116,7 +116,7 @@ export default function AddEventPage() {
               >
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center bg-white"
-                  style={{ color: `var(--color-${c.color})` }}
+                  style={{ color: `var(--color-${tileColor(c)})` }}
                 >
                   <Illustration name={c.iconName} className="w-8 h-8" />
                 </div>
@@ -148,8 +148,8 @@ export default function AddEventPage() {
                       <div
                         className="w-14 h-14 rounded-full flex items-center justify-center"
                         style={{
-                          backgroundColor: `var(--color-${c.color}-soft)`,
-                          color: `var(--color-${c.color})`,
+                          backgroundColor: `var(--color-${tileColor(c)}-soft)`,
+                          color: `var(--color-${tileColor(c)})`,
                         }}
                       >
                         <Illustration name={c.iconName} className="w-8 h-8" />

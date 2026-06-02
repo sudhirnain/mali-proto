@@ -599,7 +599,9 @@ Second review pass from Jonas. **Slide numbers here are from `feedback02.pptx` a
 
 **s7:** "replicate card from Feed" now **DONE** (same `JourneyHero` renders on both surfaces); FAB stays big/visible on Journal.
 
-**s13:** "Mom's wellbeing" rename now applied to **both** the Moments section and the `/log` composer group header; first-person labels done; mood moved to Health (Moments); **pink = surgical** (MOM badge coral only — the `[data-phase="parenting"]` teal override still stands; full pink-only A1 remains open).
+**s13:** "Mom's wellbeing" rename applied to **both** the Moments section and the `/log` composer group header; first-person labels done; **pink = surgical** (MOM badge coral only — the `[data-phase="parenting"]` teal override still stands; full pink-only A1 remains open).
+
+**s13 mood — corrected 2026-06-02 (was mis-targeted twice).** Jonas's "reduce to one, same like MOM … move it up to Health" is about the **baby** mood: the four tiles (Cheerful/Fine/Sad/Crying, group "Mood") are now a **single `mood` category in the Health group** that opens a picker (like `mom-mood`). The "Mood" group is gone. `mom-mood` ("My Mood") stays in Mom's wellbeing (a prior pass wrongly moved *mom-mood* to Health — reverted).
 
 Still DECIDE / not built: **s10** (article reader), **s12** (image-only legacy graphs), **s15** (icon-vs-drawing rule), and the **baby-as-animal art** (asset-blocked).
 
@@ -641,7 +643,7 @@ Still DECIDE / not built: **s10** (article reader), **s12** (image-only legacy g
 ### R2 s13 — Moments: Wellbeing section
 - **BUILD.** Rename section to **"Mom's wellbeing"**; rename tiles to first person — **"My Weight / My Mood / My …"**.
 - **BUILD.** The **MOM badges render teal** — make them **pink**. This is a color bug regardless of the A1 pink-only outcome (teal shouldn't appear). Ties to A1/A2.
-- **BUILD.** *"Reduce to one, same like MOM, so in the overview we got only one. Move it up to Health."* Collapse the duplicate mood entry (baby "Mood" section vs mom "My Mood" tile) to one, and move it up under Health.
+- **DONE.** *"Reduce to one, same like MOM, so in the overview we got only one. Move it up to Health."* The four baby-mood tiles (Cheerful/Fine/Sad/Crying) collapsed into a single `mood` tile in the **Health** group that opens a mood picker (like `mom-mood`). The standalone "Mood" group is gone. (mom-mood stays in Mom's wellbeing.)
 
 ### R2 s14 — "/log" Right-now suggestions
 - **BUILD** (Jonas invited input — *"what do you think?"*). Change **"Based on time of day" → "Based on your use"** and show the **top-4 most-used** categories instead of time-of-day picks. Rationale: babies sleep/eat at irregular times, so time-of-day suggestions misfire.

@@ -133,7 +133,7 @@ export const MOCK_ENTRIES: Entry[] = [
   { id: "pa8", categoryId: "head", at: iso(4 * DAY + 12 * HOUR), meta: "40 cm" },
 
   // 5 days ago — mood log
-  { id: "pa9", categoryId: "cheerful", at: iso(5 * DAY + 7 * HOUR), meta: "Smiles all day" },
+  { id: "pa9", categoryId: "mood", at: iso(5 * DAY + 7 * HOUR), meta: "Cheerful — Smiles all day" },
 
   // 6 days ago — quote
   { id: "pa10", categoryId: "quote", at: iso(6 * DAY + 9 * HOUR), meta: "The best and most beautiful things in the world cannot be seen or touched; they are felt." },

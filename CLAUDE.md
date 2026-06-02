@@ -41,8 +41,10 @@ Three tabs on `/journal`, each a different browsing axis — **same entries, thr
 - **Calendar** (`/journal/calendar`) — month grid with photo/tint cells.
 
 **Moments sections (locked)**:
-- Parenting: Memories · Development (hero=milestones, plus weight-baby / length / head tiles) · Care logs · Health · **Wellbeing (mom)** — mom-mood, symptoms, sleep-mom, weight-mom continue in parenting per Jonas's slide 13 comment about post-birth weight tracking
-- Pregnancy: Memories · Your journey (hero=JourneyHero with "3rd trimester" + Week + size + due date + progress) · Body (kicks, contractions) · Wellbeing (mom-mood, symptoms, hydration, sleep-mom, weight-mom) · Health
+- Parenting: Memories · Development (hero=milestones, plus weight-baby / length / head tiles) · Care logs · Health (**baby `mood` leads here** — see below) · **Wellbeing (mom)** — mom-mood, symptoms, sleep-mom, weight-mom continue in parenting per Jonas's slide 13 comment about post-birth weight tracking
+- Pregnancy: Memories · Your journey (hero=JourneyHero with "3rd trimester" + Week + size + due date + progress) · Body (kicks, contractions) · Wellbeing (mom-mood, symptoms, hydration, sleep-mom, weight-mom) · Health (doctor)
+
+**Baby mood (Jonas round-2 s13 "reduce to one … move it up to Health"):** the old four baby-mood categories (`cheerful`/`fine`/`sad`/`crying`, group "Mood") were collapsed into a **single `mood` category** (`group: "Health"`, parenting) that opens a mood picker (Cheerful/Fine/Sad/Crying/Other — the same `MomMoodPicker` component, branched on `cat.id === "mood"`). The "Mood" `CategoryGroup` is now unused (no longer in `GROUP_ORDER`). `mom-mood` ("My Mood") stays a separate mom tracker in **Mom's wellbeing**, NOT merged with baby mood. (An earlier pass wrongly moved *mom-mood* to Health — reverted.)
 
 **Don't revert** to a peer-level "Milestones" tab. Milestones is a category (`/journal/category/milestone`), reached as the hero in the Development section. Growth merged into Development for parenting — they're both "how is baby developing." Wellbeing is the mom-experience vertical, present in BOTH phases.
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Illustration } from "./Illustration";
-import { CATEGORIES, getCategory } from "@/lib/categories";
+import { CATEGORIES, getCategory, tileColor } from "@/lib/categories";
 import { useEntries } from "@/lib/journal-store";
 import { formatRelative } from "@/lib/format";
 
@@ -77,8 +77,8 @@ export function MiniLogTile({ id }: { id: string }) {
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center"
         style={{
-          backgroundColor: `var(--color-${cat.color}-soft)`,
-          color: `var(--color-${cat.color})`,
+          backgroundColor: `var(--color-${tileColor(cat)}-soft)`,
+          color: `var(--color-${tileColor(cat)})`,
         }}
       >
         <Illustration name={cat.iconName} className="w-5 h-5" />

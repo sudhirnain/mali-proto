@@ -49,18 +49,14 @@ export const CATEGORIES: Category[] = [
   { id: "length", label: "Length", group: "Growth rate", color: "cat-growth", formKind: "measurement", phases: ["parenting"], hasGraph: true, iconName: "ruler" },
   { id: "head", label: "Head circumference", group: "Growth rate", color: "cat-growth", formKind: "measurement", phases: ["parenting"], hasGraph: true, iconName: "head" },
 
-  // Health
+  // Health — baby Mood leads (Jonas round-2 s13: "reduce to one, same like MOM
+  // … move it up to Health" — one tile that opens a mood picker).
+  { id: "mood", label: "Mood", group: "Health", color: "cat-mood", formKind: "event", phases: ["parenting"], iconName: "mood-fine" },
   { id: "doctor", label: "Doctor's visit", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting", "pregnancy"], iconName: "doctor" },
   { id: "vaccinations", label: "Vaccinations", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting"], iconName: "syringe" },
   { id: "temperature", label: "Temperature", group: "Health", color: "cat-health", formKind: "measurement", phases: ["parenting"], iconName: "thermometer" },
   { id: "illnesses", label: "Illnesses", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting"], iconName: "heart-pulse" },
   { id: "medications", label: "Medications", group: "Health", color: "cat-health", formKind: "event", phases: ["parenting"], iconName: "pill" },
-
-  // Mood
-  { id: "cheerful", label: "Cheerful", group: "Mood", color: "cat-mood", formKind: "event", phases: ["parenting"], iconName: "mood-cheerful" },
-  { id: "fine", label: "Fine", group: "Mood", color: "cat-mood", formKind: "event", phases: ["parenting"], iconName: "mood-fine" },
-  { id: "sad", label: "Sad", group: "Mood", color: "cat-mood", formKind: "event", phases: ["parenting"], iconName: "mood-sad" },
-  { id: "crying", label: "Crying", group: "Mood", color: "cat-mood", formKind: "event", phases: ["parenting"], iconName: "mood-crying" },
 
   // Wellbeing — mom-experience tracks; present in BOTH phases (mom keeps
   // tracking after birth per Jonas's slide 13 + slide 29 comments).
@@ -83,6 +79,18 @@ export const CATEGORIES: Category[] = [
 
 export function getCategory(id: string): Category | undefined {
   return CATEGORIES.find((c) => c.id === id);
+}
+
+/**
+ * Tile accent color. Mom-experience categories (`forMom`) all render coral so
+ * the "Mom's wellbeing" track reads as one pink group regardless of each
+ * category's own domain color (Jonas round-2 s13: "My Weight, My Mood, My …
+ * make it all pink"). Uses the non-flipping `--color-coral*` so it stays pink
+ * in parenting too. Applies to tile/quick-log surfaces only — entry rows and
+ * charts keep the per-category domain color.
+ */
+export function tileColor(cat: Category): string {
+  return cat.forMom ? "coral" : cat.color;
 }
 
 export function categoriesForPhase(phase: Phase): Category[] {
@@ -145,15 +153,15 @@ export const JOURNAL_SECTIONS_PARENTING: JournalSection[] = [
   { id: "memories", label: "Memories", categoryIds: ["note", "picture", "quote"] },
   { id: "development", label: "Development", categoryIds: ["weight-baby", "length", "head"], hero: "milestones" },
   { id: "care", label: "Care logs", categoryIds: ["nursing", "bottle", "solids", "pumping", "diaper", "sleep", "stroll", "bathing"] },
-  { id: "health", label: "Health", categoryIds: ["doctor", "vaccinations", "temperature", "illnesses", "medications"] },
+  { id: "health", label: "Health", categoryIds: ["mood", "doctor", "vaccinations", "temperature", "illnesses", "medications"] },
 ];
 
 export const JOURNAL_SECTIONS_PREGNANCY: JournalSection[] = [
   { id: "memories", label: "Memories", categoryIds: ["note", "picture"] },
   { id: "journey", label: "Your journey", categoryIds: [], hero: "weekly-journey" },
   { id: "body", label: "Body", categoryIds: ["kicks", "contractions"] },
-  { id: "wellbeing", label: "Mom's wellbeing", categoryIds: ["weight-mom", "symptoms", "hydration", "sleep-mom"] },
-  { id: "health", label: "Health", categoryIds: ["mom-mood", "doctor"] },
+  { id: "wellbeing", label: "Mom's wellbeing", categoryIds: ["weight-mom", "mom-mood", "symptoms", "hydration", "sleep-mom"] },
+  { id: "health", label: "Health", categoryIds: ["doctor"] },
 ];
 
 export function journalSectionsForPhase(phase: Phase): JournalSection[] {

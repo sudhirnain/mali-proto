@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Illustration } from "@/components/Illustration";
-import { getCategory } from "@/lib/categories";
+import { getCategory, tileColor } from "@/lib/categories";
 import { categoryArt } from "@/lib/category-art";
 import { TODAY_DATE, type Entry } from "@/lib/mock-entries";
 import { isSameDay } from "@/lib/format";
@@ -40,8 +40,8 @@ export function CategoryTile({
       <div
         className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
         style={{
-          backgroundColor: `var(--color-${cat.color}-soft)`,
-          color: `var(--color-${cat.color})`,
+          backgroundColor: `var(--color-${tileColor(cat)}-soft)`,
+          color: `var(--color-${tileColor(cat)})`,
         }}
         aria-hidden
       >
