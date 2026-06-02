@@ -9,6 +9,7 @@ import { formatTime } from "@/lib/format";
 import { MOCK_KICK_SESSIONS, MOCK_CONTRACTIONS, TODAY_DATE, type Entry } from "@/lib/mock-entries";
 import { useJournalStore } from "@/lib/journal-store";
 import { useActiveTimer } from "@/lib/active-timer";
+import { useContractionSession } from "@/lib/contraction-session";
 import { tinyHaptic } from "@/lib/haptic";
 
 export default function LogEntryPage() {
@@ -391,6 +392,12 @@ function formatTimerLive(sec: number): string {
   return `${m}:${s}`;
 }
 
+/** Contraction gap, in the unit production Mali's Rate column uses (~45s / ~6 min). */
+function formatGap(ms: number): string {
+  const sec = Math.round(ms / 1000);
+  return sec < 90 ? `~${sec}s` : `~${Math.round(sec / 60)} min`;
+}
+
 function parseSide(meta?: string): "left" | "right" | "both" | null {
   if (!meta) return null;
   if (/right/i.test(meta)) return "right";
@@ -760,43 +767,73 @@ function KickCelebration({
   );
 }
 
+/**
+ * Contraction timing mirrors production Mali's two-clock logic (Jonas round-2
+ * s33 follow-up "Please compare with our logic"): a per-contraction duration
+ * timer (their pop-up) and an always-running "time since last contraction"
+ * clock (their page-top bar). The session lives in ContractionSessionContext
+ * and registers with ActiveTimer, so leaving the screen keeps it running and
+ * the floating chip leads back — "in as a tracker, like with sleep".
+ */
 function ContractionsForm({ cat }: { cat: Category }) {
   const save = useSaveEntry(cat);
   const router = useRouter();
-  const [running, setRunning] = useState(true);
-  const [logged, setLogged] = useState(0);
-  const [lastStopAt, setLastStopAt] = useState<number | null>(null);
-  const [sinceLast, setSinceLast] = useState(0);
+  const timer = useActiveTimer();
+  const session = useContractionSession();
   const [explainerOpen, setExplainerOpen] = useState(false);
 
-  useEffect(() => {
-    if (running || lastStopAt == null) return;
-    const id = setInterval(() => {
-      setSinceLast(Math.floor((Date.now() - lastStopAt) / 1000));
-    }, 1000);
-    return () => clearInterval(id);
-  }, [running, lastStopAt]);
+  const running = session.currentStart != null;
+  const count = session.events.length;
+  const lastEnd = count > 0 ? session.events[count - 1].end : null;
 
-  const mm = String(Math.floor(sinceLast / 60)).padStart(2, "0");
-  const ss = String(sinceLast % 60).padStart(2, "0");
-  const showSinceLast = !running && lastStopAt != null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!running && lastEnd == null) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [running, lastEnd]);
+
+  const currentSec = running ? Math.max(0, Math.floor((now - session.currentStart!) / 1000)) : 0;
+  const sinceLastSec = lastEnd != null ? Math.max(0, Math.floor((now - lastEnd) / 1000)) : null;
+
+  const avgDurSec = count > 0
+    ? Math.round(session.events.reduce((s, e) => s + (e.end - e.start), 0) / count / 1000)
+    : null;
+  const gapsMs = session.events.slice(1).map((e, i) => e.start - session.events[i].end);
+  const avgGapLabel = gapsMs.length > 0 ? formatGap(gapsMs.reduce((a, b) => a + b, 0) / gapsMs.length) : null;
+
+  const sessionMeta = (events: { start: number; end: number }[]) => {
+    const n = events.length;
+    const avg = Math.round(events.reduce((s, e) => s + (e.end - e.start), 0) / n / 1000);
+    const gaps = events.slice(1).map((e, i) => e.start - events[i].end);
+    const parts = [`${n} ${n === 1 ? "contraction" : "contractions"}`, `avg ${avg}s`];
+    if (gaps.length > 0) parts.push(`${formatGap(gaps.reduce((a, b) => a + b, 0) / gaps.length)} apart`);
+    return parts.join(", ");
+  };
 
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <div className="serif text-4xl font-semibold text-neutral-900 tabular-nums">00:45</div>
+        <div
+          className={`serif text-4xl font-semibold tabular-nums ${running ? "" : "text-neutral-300"}`}
+          style={running ? { color: "var(--color-cat-contractions)" } : undefined}
+        >
+          {formatTimerLive(currentSec)}
+        </div>
         <div className="text-xs text-neutral-500 mt-1">
-          {running ? "Current contraction" : "Stopped — tap below to log"}
+          {running ? "Current contraction" : "Tap below when a contraction starts"}
         </div>
       </div>
 
-      {showSinceLast && (
+      {sinceLastSec != null && (
         <div className="text-center">
           <div className="text-[11px] uppercase tracking-wide text-neutral-500">
             Time since last contraction
           </div>
           <div className="serif text-2xl font-semibold text-neutral-900 tabular-nums mt-0.5">
-            {mm}:{ss}
+            {formatTimerLive(sinceLastSec)}
           </div>
         </div>
       )}
@@ -805,20 +842,30 @@ function ContractionsForm({ cat }: { cat: Category }) {
         onClick={() => {
           tinyHaptic();
           if (running) {
-            setLastStopAt(Date.now());
-            setSinceLast(0);
+            session.stopContraction();
+            // Re-baseline the floating chip so its ticking number is "time
+            // since last contraction" — the page-top clock in production Mali.
+            timer.stop(cat.id);
+            timer.start(cat.id);
+          } else {
+            session.startContraction();
+            timer.start(cat.id); // no-op if already running — chip persists across the session
           }
-          setRunning((r) => !r);
-          setLogged((n) => n + 1);
         }}
-        className="w-full py-3 rounded-full text-white font-semibold text-base"
+        className="w-full py-3 rounded-full text-white font-semibold text-base active:scale-[0.98] transition"
         style={{ backgroundColor: "var(--color-cat-contractions)" }}
       >
-        {running ? "Stop contraction" : "Start next"}
+        {running ? "Stop contraction" : count > 0 ? "Start next" : "Start contraction"}
       </button>
 
+      {count > 0 && (
+        <div className="text-xs text-neutral-600 text-center tabular-nums">
+          {count} this session · avg {avgDurSec}s{avgGapLabel ? ` · ${avgGapLabel} apart` : ""}
+        </div>
+      )}
+
       <div className="text-xs text-neutral-500 text-center">
-        {MOCK_CONTRACTIONS.length + logged} contractions logged today
+        {MOCK_CONTRACTIONS.length + count} contractions logged today
       </div>
 
       {/* Slide 18 comment: "Note that this is relevant. Pls show somewhere." —
@@ -844,11 +891,17 @@ function ContractionsForm({ cat }: { cat: Category }) {
 
       <DoneBar
         onDone={() => {
-          if (logged <= 0) {
+          // Done mid-contraction counts the in-flight one as ending now.
+          const finalEvents = running
+            ? [...session.events, { start: session.currentStart!, end: Date.now() }]
+            : session.events;
+          timer.stop(cat.id);
+          session.reset();
+          if (finalEvents.length === 0) {
             router.back();
             return;
           }
-          save({ meta: `${logged} ${logged === 1 ? "contraction" : "contractions"}, ~45s each` });
+          save({ meta: sessionMeta(finalEvents) });
         }}
       />
     </div>
