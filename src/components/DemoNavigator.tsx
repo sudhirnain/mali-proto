@@ -65,7 +65,9 @@ export function DemoNavigator({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div className="bg-white/95 backdrop-blur rounded-2xl shadow-lg border border-neutral-200 w-60 overflow-hidden">
+    // max-h + scroll: the widget outgrew the viewport once the Adjust section
+    // landed — without this the lower sections are unreachable.
+    <div className="bg-white/95 backdrop-blur rounded-2xl shadow-lg border border-neutral-200 w-60 max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain">
       <div className="px-3 pt-3 pb-3">
         <Section label="Phase">
           {PHASES.map((p) => (

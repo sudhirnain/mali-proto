@@ -95,6 +95,56 @@ export function useStoredColorTweaks() {
   }, []);
 }
 
+const HEX_RE = /^#?([0-9a-fA-F]{6})$/;
+
+/** One color row: swatch · label · hex field. Applies on blur/Enter when the
+ *  value parses as 6-digit hex (with or without leading #). */
+function HexRow({
+  label,
+  value,
+  overridden,
+  onCommit,
+}: {
+  label: string;
+  value: string;
+  overridden: boolean;
+  onCommit: (hex: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  // Keep the field in sync when the resolved value arrives async (defaults
+  // load after mount) or Reset clears overrides.
+  useEffect(() => setDraft(value), [value]);
+
+  const commit = () => {
+    const m = draft.trim().match(HEX_RE);
+    if (m) onCommit(`#${m[1].toLowerCase()}`);
+    else setDraft(value); // invalid → snap back
+  };
+
+  return (
+    <label className="flex items-center gap-1.5 text-[10.5px] text-neutral-600">
+      <span
+        aria-hidden
+        className="w-4 h-4 rounded border border-neutral-200 shrink-0"
+        style={{ backgroundColor: value }}
+      />
+      <span className={`flex-1 truncate capitalize ${overridden ? "font-semibold text-neutral-800" : ""}`}>
+        {label}
+      </span>
+      <input
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        spellCheck={false}
+        aria-label={`${label} hex color`}
+        className="w-[72px] bg-neutral-50 border border-neutral-200 rounded px-1.5 py-0.5 font-mono text-[10.5px] text-neutral-800 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+      />
+    </label>
+  );
+}
+
 export function TweakPanel() {
   const [editText, setEditText] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
@@ -161,18 +211,15 @@ export function TweakPanel() {
           <summary className="text-[11px] font-semibold text-neutral-600 cursor-pointer px-1.5 py-1 rounded hover:bg-neutral-100 select-none">
             {g.label}
           </summary>
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1.5 px-1">
+          <div className="flex flex-col gap-1 mt-1.5 px-1">
             {g.swatches.map((s) => (
-              <label key={s.var} className="flex items-center gap-1.5 text-[10.5px] text-neutral-600 capitalize cursor-pointer">
-                <input
-                  type="color"
-                  value={overrides[s.var] ?? defaults[s.var] ?? "#000000"}
-                  onChange={(e) => setColor(s.var, e.target.value)}
-                  className="w-5 h-5 rounded border border-neutral-200 p-0 bg-transparent cursor-pointer"
-                  aria-label={`${g.label} ${s.label}`}
-                />
-                <span className="truncate">{s.label}</span>
-              </label>
+              <HexRow
+                key={s.var}
+                label={s.label}
+                value={overrides[s.var] ?? defaults[s.var] ?? ""}
+                overridden={s.var in overrides}
+                onCommit={(hex) => setColor(s.var, hex)}
+              />
             ))}
           </div>
         </details>
