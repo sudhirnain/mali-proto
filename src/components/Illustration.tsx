@@ -14,7 +14,7 @@ import {
   Scales,
   Ruler as PhRuler,
   // Health
-  Stethoscope,
+  FirstAidKit,
   Syringe as PhSyringe,
   Thermometer as PhThermometer,
   Heartbeat,
@@ -89,7 +89,10 @@ const PHOSPHOR_MAP: Record<string, PhosphorIconComponent> = {
   "scale-outline": Scales,
 
   // Health
-  doctor: Stethoscope,
+  // FirstAidKit (not Stethoscope): at weight="fill" the stethoscope renders as a
+  // thin line glyph next to chunky fills (smiley/bath/foot) — it made the
+  // Right-now row read as two different icon languages.
+  doctor: FirstAidKit,
   syringe: PhSyringe,
   thermometer: PhThermometer,
   "heart-pulse": Heartbeat,
