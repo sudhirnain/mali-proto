@@ -813,28 +813,52 @@ function ContractionsForm({ cat }: { cat: Category }) {
     return parts.join(", ");
   };
 
+  // The hero slot shows ONE clock, swapped by state (2026-06-02, Sudhir):
+  // during a contraction the duration is the number that matters; between
+  // contractions the gap is. Two ticking clocks compete — and mid-contraction
+  // "since last" stops meaning "the gap" anyway. Production is effectively
+  // modal here too (their pop-up covers the page clock).
+  const lastDurSec =
+    count > 0
+      ? Math.round((session.events[count - 1].end - session.events[count - 1].start) / 1000)
+      : null;
+  // Frozen at start — context line while timing, not a competing ticker.
+  const gapBeforeCurrent =
+    running && lastEnd != null ? formatGap(session.currentStart! - lastEnd) : null;
+
   return (
     <div className="space-y-5">
-      <div className="text-center">
-        <div
-          className={`serif text-4xl font-semibold tabular-nums ${running ? "" : "text-neutral-300"}`}
-          style={running ? { color: "var(--color-cat-contractions)" } : undefined}
-        >
-          {formatTimerLive(currentSec)}
-        </div>
-        <div className="text-xs text-neutral-500 mt-1">
-          {running ? "Current contraction" : "Tap below when a contraction starts"}
-        </div>
-      </div>
-
-      {sinceLastSec != null && (
+      {running ? (
         <div className="text-center">
-          <div className="text-[11px] uppercase tracking-wide text-neutral-500">
-            Time since last contraction
+          <div
+            className="serif text-4xl font-semibold tabular-nums"
+            style={{ color: "var(--color-cat-contractions)" }}
+          >
+            {formatTimerLive(currentSec)}
           </div>
-          <div className="serif text-2xl font-semibold text-neutral-900 tabular-nums mt-0.5">
+          <div className="text-xs text-neutral-500 mt-1">Current contraction</div>
+          {gapBeforeCurrent && (
+            <div className="text-[11px] text-neutral-400 mt-1.5">
+              after a {gapBeforeCurrent.replace("~", "")} gap
+            </div>
+          )}
+        </div>
+      ) : sinceLastSec != null ? (
+        <div className="text-center">
+          <div className="serif text-4xl font-semibold text-neutral-900 tabular-nums">
             {formatTimerLive(sinceLastSec)}
           </div>
+          <div className="text-xs text-neutral-500 mt-1">Since last contraction</div>
+          {lastDurSec != null && (
+            <div className="text-[11px] text-neutral-400 mt-1.5 tabular-nums">
+              Last contraction · {lastDurSec}s
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center">
+          <div className="serif text-4xl font-semibold text-neutral-300 tabular-nums">00:00</div>
+          <div className="text-xs text-neutral-500 mt-1">Tap below when a contraction starts</div>
         </div>
       )}
 
