@@ -13,9 +13,9 @@ const PHASES: Phase[] = ["pregnancy", "parenting"];
  * state we want to showcase:
  *   - Phase (Pregnancy / Parenting)
  *   - Data state (Populated 19 entries / Empty first-day)
- *   - "In case you missed" demo paths + the Adjust self-serve panel
- * (The "Jump to" route list was removed 2026-06-02 — reviewers navigate in
- * the app itself; the widget stays focused on state + demo paths.)
+ *   - The Adjust self-serve panel (text + colors)
+ * ("Jump to" and "In case you missed" were removed 2026-06-02 per Sudhir —
+ * reviewers navigate in the app itself; the widget stays minimal.)
  */
 export function DemoNavigator({ compact = false }: { compact?: boolean }) {
   const { phase, setPhase } = usePhase();
@@ -95,40 +95,6 @@ export function DemoNavigator({ compact = false }: { compact?: boolean }) {
       </div>
 
       <div className="px-3 py-3 border-t border-neutral-100">
-        <Section label="In case you missed">
-          <TryThis
-            label="Mark a milestone as a memory"
-            sub="Parenting · capture form"
-            onClick={() => {
-              setPhase("parenting");
-              setCold(false);
-              router.push("/journal/category/milestone");
-            }}
-          />
-          <TryThis
-            label="See the birth handoff"
-            sub="Pregnancy → Parenting"
-            onClick={() => {
-              setCold(false);
-              setPhase("pregnancy");
-              router.push("/feed");
-              // Tiny delay so the pregnancy state settles before the
-              // transition; BirthHandoff fires on the parenting flip.
-              setTimeout(() => setPhase("parenting"), 350);
-            }}
-          />
-          <TryThis
-            label="See the cold-start experience"
-            sub="Empty state · any phase"
-            onClick={() => {
-              setCold(true);
-              router.push("/feed");
-            }}
-          />
-        </Section>
-      </div>
-
-      <div className="px-3 py-3 border-t border-neutral-100">
         <Section label="Adjust (for Mali team)">
           <TweakPanel />
         </Section>
@@ -141,26 +107,6 @@ export function DemoNavigator({ compact = false }: { compact?: boolean }) {
         </p>
       </div>
     </div>
-  );
-}
-
-function TryThis({
-  label,
-  sub,
-  onClick,
-}: {
-  label: string;
-  sub: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="text-left text-[13px] px-2.5 py-1.5 rounded-lg text-neutral-700 hover:bg-neutral-100 transition flex flex-col"
-    >
-      <span className="font-medium">{label}</span>
-      <span className="text-[10px] text-neutral-400">{sub}</span>
-    </button>
   );
 }
 
