@@ -801,10 +801,6 @@ function ContractionsForm({ cat }: { cat: Category }) {
         </div>
       )}
 
-      <div className="bg-neutral-50 rounded-2xl p-4 text-center text-sm text-neutral-700">
-        Average interval: <span className="font-semibold text-neutral-900">7 min</span> · Last: 50s
-      </div>
-
       <button
         onClick={() => {
           tinyHaptic();
