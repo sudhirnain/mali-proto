@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Illustration } from "@/components/Illustration";
 import { getCategory, tileColor } from "@/lib/categories";
-import { categoryArt } from "@/lib/category-art";
 import { TODAY_DATE, type Entry } from "@/lib/mock-entries";
 import { isSameDay } from "@/lib/format";
 
@@ -26,7 +24,6 @@ export function CategoryTile({
 
   const own = entries.filter((e) => e.categoryId === categoryId);
   const empty = own.length === 0;
-  const art = categoryArt(cat.id);
 
   return (
     <Link
@@ -45,11 +42,9 @@ export function CategoryTile({
         }}
         aria-hidden
       >
-        {art ? (
-          <Image src={art} alt="" width={20} height={20} className="object-contain" style={{ width: "auto", height: "auto" }} />
-        ) : (
-          <Illustration name={cat.iconName} className="w-4 h-4" />
-        )}
+        {/* Icons in tiles (Jonas s15); the colored cartoon stays on the
+            category-detail hero only, so small tiles read cleanly. */}
+        <Illustration name={cat.iconName} className="w-4 h-4" />
       </div>
 
       <div className="text-[13px] font-semibold text-neutral-900 leading-tight">
