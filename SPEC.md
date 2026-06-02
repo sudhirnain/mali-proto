@@ -601,7 +601,9 @@ Second review pass from Jonas. **Slide numbers here are from `feedback02.pptx` a
 
 **s13:** "Mom's wellbeing" rename now applied to **both** the Moments section and the `/log` composer group header; first-person labels done; mood moved to Health (Moments); **pink = surgical** (MOM badge coral only — the `[data-phase="parenting"]` teal override still stands; full pink-only A1 remains open).
 
-Still DECIDE / not built: **s10** (article reader), **s12** (image-only legacy graphs), **s15** (icon-vs-drawing rule), and the **baby-as-animal art** (asset-blocked). s5 "clearer CTA" addressed via the sticky Save (no copy change).
+Still DECIDE / not built: **s10** (article reader), **s12** (image-only legacy graphs), **s15** (icon-vs-drawing rule), and the **baby-as-animal art** (asset-blocked).
+
+**s5 revisited (2026-06-02):** the sticky SaveBar was clunky — Sudhir reverted it. `TimerEntryForm` was redesigned compact and fits without scrolling, so Save sits naturally at the bottom (satisfies Jonas's "Save always visible" without pinning): no duration headline (small label by End), no preset chips. Capture method is a **`Manual | Live timer` toggle** at the top (My Baby Manual/Timer pattern, slide 34) — Manual shows Start/End + extras + Save; Live shows Start→Stop, then hands the filled times back to Manual to review & save. **Daytime/Night manual toggle dropped** — auto-derived from the start time and still saved, but it was redundant with the start and drove nothing in-app.
 
 ### R2 s3 — Feed header
 - **BUILD.** Due-date element should be a **link** (*"see right"*) — same ask as A5b; reinforces making the right-ring due date tappable.

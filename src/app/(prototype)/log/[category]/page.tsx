@@ -180,7 +180,9 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
 
   const [start, setStart] = useState<Date>(defaultStart);
   const [end, setEnd] = useState<Date>(defaultEnd);
-  const [sleepKind, setSleepKind] = useState<"Daytime" | "Night">(inferSleepKind(defaultStart));
+  // Daytime/Night is auto-derived from the start time (no manual toggle — it
+  // was redundant with the start, see 2026-06-02). Still recorded on the entry.
+  const sleepKind = inferSleepKind(start);
   const [side, setSide] = useState<"left" | "right" | "both">(() => parseSide(editing?.meta) ?? "right");
   const [quantityMl, setQuantityMl] = useState<number>(() => parseMl(editing?.meta) ?? (cat.id === "bottle" ? 120 : 90));
   const [milkType, setMilkType] = useState<"Breast milk" | "Formula">(() => (/formula/i.test(editing?.meta ?? "") ? "Formula" : "Breast milk"));
@@ -191,33 +193,14 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const timer = useActiveTimer();
   const liveTimer = timer.timerFor(cat.id);
   const runningHere = !!liveTimer;
+  // Manual (start/end fields) vs Live timer (Start → Stop) — the My Baby
+  // Manual/Timer pattern (slide 34). Defaults to Manual (retro logging is the
+  // common case); opens in Live if a timer for this category is already running.
+  const [mode, setMode] = useState<"Manual" | "Live timer">(runningHere ? "Live timer" : "Manual");
 
   const accent = `var(--color-${cat.color})`;
   const fieldDurationMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
   const invalid = !runningHere && end.getTime() <= start.getTime();
-
-  useEffect(() => {
-    if (isSleep && !runningHere) setSleepKind(inferSleepKind(start));
-  }, [start, runningHere, isSleep]);
-
-  const applyChip = (key: "just-woke" | "earlier" | "last-night") => {
-    const now = new Date();
-    if (key === "just-woke") {
-      setEnd(now);
-      setStart(new Date(now.getTime() - 60 * 60000));
-    } else if (key === "earlier") {
-      setEnd(new Date(now.getTime() - 2 * 60 * 60000));
-      setStart(new Date(now.getTime() - 4 * 60 * 60000));
-    } else if (key === "last-night") {
-      const s = new Date(now);
-      s.setDate(s.getDate() - 1);
-      s.setHours(21, 30, 0, 0);
-      const e = new Date(now);
-      e.setHours(6, 0, 0, 0);
-      setStart(s);
-      setEnd(e);
-    }
-  };
 
   const stopLive = () => {
     if (!liveTimer) return;
@@ -227,162 +210,147 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="text-center">
-        <div
-          className="serif text-4xl font-semibold tabular-nums"
-          style={{ color: runningHere ? accent : undefined }}
-        >
-          {runningHere
-            ? formatTimerLive(timer.elapsedSec(cat.id))
-            : invalid
-              ? "—"
-              : formatDurationShort(fieldDurationMin)}
-        </div>
-        <div className="text-xs text-neutral-500 mt-1">
-          {runningHere
-            ? "Running — keeps going if you navigate away"
-            : invalid
-              ? "End must be after start"
-              : isSleep
-                ? `${sleepKind} sleep`
-                : `${cat.label} duration`}
-        </div>
-      </div>
-
-      {isSleep && !runningHere && (
-        <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
-          {([
-            { k: "just-woke", l: "Just woke up" },
-            { k: "earlier", l: "Earlier today" },
-            { k: "last-night", l: "Last night" },
-          ] as const).map(({ k, l }) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => applyChip(k)}
-              className="shrink-0 text-sm font-medium px-3.5 py-2 rounded-full bg-neutral-100 text-neutral-700 active:bg-neutral-200 transition"
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <Field label="Start">
-        <DateTimeInput
-          value={liveTimer ? new Date(liveTimer.startedAt) : start}
-          onChange={setStart}
-          disabled={runningHere}
-        />
-      </Field>
-      {!runningHere && (
-        <Field label="End">
-          <DateTimeInput value={end} onChange={setEnd} />
-        </Field>
-      )}
-
-      {!runningHere && (
-        <button
-          type="button"
-          onClick={() => timer.start(cat.id)}
-          className="w-full text-sm font-medium px-3.5 py-2.5 rounded-full border border-neutral-200 bg-white text-neutral-700 active:bg-neutral-50 inline-flex items-center justify-center gap-2"
-        >
-          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accent }} />
-          Start live timer
-        </button>
-      )}
-      {runningHere && (
-        <button
-          type="button"
-          onClick={stopLive}
-          className="w-full text-sm font-semibold px-3.5 py-2.5 rounded-full border-2 bg-white inline-flex items-center justify-center gap-2"
-          style={{ borderColor: accent, color: accent }}
-        >
-          Stop &amp; fill end time
-        </button>
-      )}
-
-      {isSleep && (
-        <SegmentedToggle
-          options={["Daytime", "Night"] as const}
-          value={sleepKind}
-          onChange={setSleepKind}
-        />
-      )}
-
-      {showSide && (
-        <SegmentedToggle
-          options={["left", "both", "right"] as const}
-          value={side}
-          onChange={setSide}
-          capitalize
-        />
-      )}
-
-      {showQuantity && (
-        <Field label="Quantity (ml)">
-          <input
-            type="number"
-            inputMode="numeric"
-            value={quantityMl}
-            min={0}
-            step={10}
-            onChange={(e) => setQuantityMl(Number(e.target.value) || 0)}
-            className={`${INPUT_CLASS} text-base tabular-nums`}
-          />
-        </Field>
-      )}
-
-      {showMilkType && (
-        <SegmentedToggle
-          options={["Breast milk", "Formula"] as const}
-          value={milkType}
-          onChange={setMilkType}
-        />
-      )}
-
-      {showComments && (
-        <Field label="Comments (optional)">
-          <textarea
-            rows={2}
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            placeholder="Anything you want to remember?"
-            className={`${INPUT_CLASS} text-sm resize-none`}
-          />
-        </Field>
-      )}
-
-      <PhotoAttachField photo={photo} onChange={setPhoto} />
-
-      <SaveBar
-        cat={cat}
-        editing={editing}
-        onSave={() => {
-          let finalStart = start;
-          let finalEnd = end;
-          if (liveTimer) {
-            timer.stop(cat.id);
-            finalStart = new Date(liveTimer.startedAt);
-            finalEnd = new Date();
-          }
-          const finalMin = Math.max(1, Math.round((finalEnd.getTime() - finalStart.getTime()) / 60000));
-          const parts: string[] = [formatDurationShort(finalMin)];
-          if (isSleep) parts.push(sleepKind);
-          if (showQuantity) parts.push(`${quantityMl}ml`);
-          if (showMilkType) parts.push(milkType);
-          if (showSide) parts.push(side);
-          const baseMeta = parts.join(", ");
-          const note = comments.trim();
-          save({
-            at: finalEnd.toISOString(),
-            durationMin: finalMin,
-            meta: note ? `${baseMeta} — ${note}` : baseMeta,
-            photo,
-          });
+    <div className="space-y-4">
+      <SegmentedToggle
+        options={["Manual", "Live timer"] as const}
+        value={mode}
+        onChange={(m) => {
+          // Switching to Manual mid-session stops the timer and fills the times.
+          if (m === "Manual" && runningHere) stopLive();
+          setMode(m);
         }}
       />
+
+      {mode === "Live timer" ? (
+        runningHere ? (
+          <div className="space-y-3">
+            <div className="text-center py-1">
+              <div className="serif text-4xl font-semibold tabular-nums" style={{ color: accent }}>
+                {formatTimerLive(timer.elapsedSec(cat.id))}
+              </div>
+              <div className="text-xs text-neutral-500 mt-1">
+                Running — keeps going if you navigate away
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                stopLive();
+                setMode("Manual");
+              }}
+              className="w-full py-3 rounded-full text-white font-semibold text-base active:scale-[0.98] transition"
+              style={{ backgroundColor: accent }}
+            >
+              Stop &amp; review
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="serif text-4xl font-semibold tabular-nums text-center text-neutral-300 py-1">
+              00:00
+            </div>
+            <button
+              type="button"
+              onClick={() => timer.start(cat.id)}
+              className="w-full py-3 rounded-full text-white font-semibold text-base active:scale-[0.98] transition"
+              style={{ backgroundColor: accent }}
+            >
+              Start timer
+            </button>
+            <div className="text-xs text-neutral-500 text-center px-2">
+              Runs in the background — Stop fills the times so you can review &amp; save.
+            </div>
+          </div>
+        )
+      ) : (
+        <>
+          <Field label="Start">
+            <DateTimeInput value={start} onChange={setStart} />
+          </Field>
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">End</span>
+              <span className={`text-xs tabular-nums ${invalid ? "text-red-500" : "text-neutral-500"}`}>
+                {invalid ? "End is before start" : formatDurationShort(fieldDurationMin)}
+              </span>
+            </div>
+            <DateTimeInput value={end} onChange={setEnd} />
+          </div>
+
+          {showSide && (
+            <SegmentedToggle
+              options={["left", "both", "right"] as const}
+              value={side}
+              onChange={setSide}
+              capitalize
+            />
+          )}
+
+          {showQuantity && (
+            <Field label="Quantity (ml)">
+              <input
+                type="number"
+                inputMode="numeric"
+                value={quantityMl}
+                min={0}
+                step={10}
+                onChange={(e) => setQuantityMl(Number(e.target.value) || 0)}
+                className={`${INPUT_CLASS} text-base tabular-nums`}
+              />
+            </Field>
+          )}
+
+          {showMilkType && (
+            <SegmentedToggle
+              options={["Breast milk", "Formula"] as const}
+              value={milkType}
+              onChange={setMilkType}
+            />
+          )}
+
+          {showComments && (
+            <Field label="Comments (optional)">
+              <textarea
+                rows={2}
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                placeholder="Anything you want to remember?"
+                className={`${INPUT_CLASS} text-sm resize-none`}
+              />
+            </Field>
+          )}
+
+          <PhotoAttachField photo={photo} onChange={setPhoto} />
+
+          <SaveBar
+            cat={cat}
+            editing={editing}
+            onSave={() => {
+              let finalStart = start;
+              let finalEnd = end;
+              if (liveTimer) {
+                timer.stop(cat.id);
+                finalStart = new Date(liveTimer.startedAt);
+                finalEnd = new Date();
+              }
+              const finalMin = Math.max(1, Math.round((finalEnd.getTime() - finalStart.getTime()) / 60000));
+              const parts: string[] = [formatDurationShort(finalMin)];
+              if (isSleep) parts.push(sleepKind);
+              if (showQuantity) parts.push(`${quantityMl}ml`);
+              if (showMilkType) parts.push(milkType);
+              if (showSide) parts.push(side);
+              const baseMeta = parts.join(", ");
+              const note = comments.trim();
+              save({
+                at: finalEnd.toISOString(),
+                durationMin: finalMin,
+                meta: note ? `${baseMeta} — ${note}` : baseMeta,
+                photo,
+              });
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -1047,16 +1015,13 @@ function readFileAsDataUrl(file: File): Promise<string | undefined> {
  */
 function SaveBar({ cat, editing, onSave }: { cat: Category; editing?: Entry; onSave?: () => void }) {
   return (
-    <div className="sticky bottom-0 -mx-5 -mb-5 px-5 pt-4 pb-5 bg-white">
-      <div className="pointer-events-none absolute inset-x-0 -top-5 h-5 bg-gradient-to-t from-white to-transparent" aria-hidden />
-      <button
-        onClick={onSave}
-        className="w-full py-3 rounded-full text-white font-semibold text-base active:scale-[0.98] transition"
-        style={{ backgroundColor: `var(--color-${cat.color})` }}
-      >
-        {editing ? "Save changes" : "Save"}
-      </button>
-    </div>
+    <button
+      onClick={onSave}
+      className="w-full py-3 rounded-full text-white font-semibold text-base active:scale-[0.98] transition"
+      style={{ backgroundColor: `var(--color-${cat.color})` }}
+    >
+      {editing ? "Save changes" : "Save"}
+    </button>
   );
 }
 
