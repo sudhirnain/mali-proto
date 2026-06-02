@@ -8,7 +8,7 @@ Production alias: **https://mali-proto.vercel.app** (Vercel scope `sudhir-nain-s
 
 GitHub: **https://github.com/sudhirnain/mali-proto** (private). Local `.vercel/project.json` is gitignored; re-link from CLI if it's missing or stale.
 
-The shareable demo lands a stranger on `/feed` (root redirects there via `(prototype)/page.tsx`). The DemoNavigator widget — always visible top-right on desktop, compact pill on mobile — is the discovery surface. It has Phase / State / Jump to / **In case you missed** sections. No separate welcome flow.
+The shareable demo lands a stranger on `/feed` (root redirects there via `(prototype)/page.tsx`). The DemoNavigator widget — always visible top-right on desktop, compact pill on mobile — is the discovery surface. It has Phase / State / **In case you missed** / Adjust sections ("Jump to" removed 2026-06-02 per Sudhir). No separate welcome flow.
 
 ## Source of truth
 

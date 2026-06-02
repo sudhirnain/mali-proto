@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { usePhase, PHASE_LABELS, type Phase } from "@/lib/phase";
 import { useColdMode } from "@/lib/cold-mode";
@@ -10,14 +9,13 @@ const PHASES: Phase[] = ["pregnancy", "parenting"];
 
 /**
  * Demo-only navigator. Renders outside the device frame on desktop and as
- * a compact pill on mobile. Lets a reviewer (Jonas) jump between every
+ * a compact pill on mobile. Lets a reviewer (Jonas) flip between every
  * state we want to showcase:
- *   - Phase (T1-2 / T3 / Parenting)
+ *   - Phase (Pregnancy / Parenting)
  *   - Data state (Populated 19 entries / Empty first-day)
- *   - Specific routes (Feed / Journal / Calendar / Add event / Entry detail)
- *
- * Cold-state preservation: jump links carry the current `?mode=cold` through,
- * so you can navigate the whole empty-state walkthrough without losing it.
+ *   - "In case you missed" demo paths + the Adjust self-serve panel
+ * (The "Jump to" route list was removed 2026-06-02 — reviewers navigate in
+ * the app itself; the widget stays focused on state + demo paths.)
  */
 export function DemoNavigator({ compact = false }: { compact?: boolean }) {
   const { phase, setPhase } = usePhase();
@@ -33,8 +31,6 @@ export function DemoNavigator({ compact = false }: { compact?: boolean }) {
     const qs = params.toString();
     router.push(`${pathname}${qs ? `?${qs}` : ""}`);
   }
-
-  const jumpHref = (href: string) => (cold ? `${href}?mode=cold` : href);
 
   if (compact) {
     return (
@@ -95,23 +91,6 @@ export function DemoNavigator({ compact = false }: { compact?: boolean }) {
             active={cold}
             onClick={() => setCold(true)}
           />
-        </Section>
-      </div>
-
-      <div className="px-3 py-3 border-t border-neutral-100">
-        <Section label="Jump to">
-          <JumpLink href={jumpHref("/feed")}>Home · Feed</JumpLink>
-          <JumpLink href={jumpHref("/journal")}>Journal · Timeline</JumpLink>
-          <JumpLink href={jumpHref("/journal/moments")}>Journal · Moments</JumpLink>
-          <JumpLink href={jumpHref("/journal/calendar")}>Journal · Calendar</JumpLink>
-          <JumpLink href={jumpHref("/journal/category/nursing")}>
-            Category detail
-          </JumpLink>
-          <JumpLink href={jumpHref("/journal/category/milestone")}>
-            Milestones library
-          </JumpLink>
-          <JumpLink href={jumpHref("/log")}>Add to Journal</JumpLink>
-          <JumpLink href={jumpHref("/journal/entry/e1")}>Entry detail</JumpLink>
         </Section>
       </div>
 
@@ -226,13 +205,3 @@ function Row({
   );
 }
 
-function JumpLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="text-[13px] px-2.5 py-1.5 rounded-lg text-neutral-700 hover:bg-neutral-100 transition"
-    >
-      {children}
-    </Link>
-  );
-}
