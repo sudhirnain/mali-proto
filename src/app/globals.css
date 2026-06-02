@@ -19,21 +19,24 @@
   --color-teal-softer: #d6e6e4;
   --color-teal-bright: #75b5b2;
 
-  /* Category colors — aligned to deck families (Sleep/Care=purple, Food=mint/peach, Diaper=butter, Growth=rose, Health=violet, Mood=lavender) */
-  --color-cat-sleep: #9c8ff7;
-  --color-cat-sleep-soft: #ece9fe;
+  /* Category colors. The cool-family tracks (sleep/care/health/mood) were once
+     four near-identical purples; pulled apart into a distinct cool spectrum so
+     adjacent tiles are scannable (Jonas s15): sleep=indigo, care=violet,
+     health=blue (medical), mood=orchid. Food=mint, Diaper=butter, Growth=rose. */
+  --color-cat-sleep: #6e6ef0;
+  --color-cat-sleep-soft: #e7e7fd;
   --color-cat-food: #62c58a;
   --color-cat-food-soft: #e0f4e9;
   --color-cat-diaper: #d4a155;
   --color-cat-diaper-soft: #f7ecd6;
-  --color-cat-care: #b89cf5;
-  --color-cat-care-soft: #ede4fd;
+  --color-cat-care: #a86cd0;
+  --color-cat-care-soft: #f0e6f8;
   --color-cat-growth: #f4818a;
   --color-cat-growth-soft: #fde0e3;
-  --color-cat-health: #8d7bd0;
-  --color-cat-health-soft: #e6e1f5;
-  --color-cat-mood: #c0a8e0;
-  --color-cat-mood-soft: #ece2f6;
+  --color-cat-health: #5b94d8;
+  --color-cat-health-soft: #e4edf9;
+  --color-cat-mood: #d27fbf;
+  --color-cat-mood-soft: #f7e8f3;
   --color-cat-kicks: #e76f66;
   --color-cat-kicks-soft: #f8c2b6;
   --color-cat-contractions: #c8554c;
@@ -57,20 +60,20 @@
 
   /* Re-expose category vars at :root so inline `style={{ background: var(--color-cat-food) }}`
      works. Tailwind 4 tree-shakes @theme vars when only used via var() in raw CSS. */
-  --color-cat-sleep: #9c8ff7;
-  --color-cat-sleep-soft: #ece9fe;
+  --color-cat-sleep: #6e6ef0;
+  --color-cat-sleep-soft: #e7e7fd;
   --color-cat-food: #62c58a;
   --color-cat-food-soft: #e0f4e9;
   --color-cat-diaper: #d4a155;
   --color-cat-diaper-soft: #f7ecd6;
-  --color-cat-care: #b89cf5;
-  --color-cat-care-soft: #ede4fd;
+  --color-cat-care: #a86cd0;
+  --color-cat-care-soft: #f0e6f8;
   --color-cat-growth: #f4818a;
   --color-cat-growth-soft: #fde0e3;
-  --color-cat-health: #8d7bd0;
-  --color-cat-health-soft: #e6e1f5;
-  --color-cat-mood: #c0a8e0;
-  --color-cat-mood-soft: #ece2f6;
+  --color-cat-health: #5b94d8;
+  --color-cat-health-soft: #e4edf9;
+  --color-cat-mood: #d27fbf;
+  --color-cat-mood-soft: #f7e8f3;
   --color-cat-kicks: #e76f66;
   --color-cat-kicks-soft: #f8c2b6;
   --color-cat-contractions: #c8554c;
