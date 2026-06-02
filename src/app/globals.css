@@ -24,6 +24,11 @@
   --color-teal-softer: #e8f0ee; /* derived: green_light lightened */
   --color-teal-bright: #76a5a0; /* derived: paradiso lightened */
 
+  /* Mom-tile pair (tileColor → "mom"). Froly-on-mildPeach has no contrast —
+     production's own tile pattern is dark red icon on pale pink circle. */
+  --color-mom: var(--color-coral-dark);
+  --color-mom-soft: var(--color-coral-softer);
+
   /* Category colors. The cool-family tracks (sleep/care/health/mood) were once
      four near-identical purples; pulled apart into a distinct cool spectrum so
      adjacent tiles are scannable (Jonas s15): sleep=indigo, care=violet,
@@ -81,6 +86,10 @@
   --color-cat-health-soft: #e4edf9;
   --color-cat-mood: #d27fbf;
   --color-cat-mood-soft: #f7e8f3;
+  /* Mom-tile pair (see @theme copy above). */
+  --color-mom: var(--color-coral-dark);
+  --color-mom-soft: var(--color-coral-softer);
+
   /* Pregnancy-track categories alias the brand (see @theme copy above). */
   --color-cat-kicks: var(--color-coral);
   --color-cat-kicks-soft: var(--color-coral-soft);

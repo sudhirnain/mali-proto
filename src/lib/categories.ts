@@ -104,7 +104,10 @@ const TILE_GROUP_COLOR: Partial<Record<CategoryGroup, string>> = {
 };
 
 export function tileColor(cat: Category): string {
-  if (cat.forMom) return "coral";
+  // "mom" = maliRed icon on azalea circle (globals.css). Plain "coral"
+  // stopped working when froly became the brand primary — froly icon on
+  // mildPeach bg had ~1.4:1 contrast (2026-06-02 palette adoption).
+  if (cat.forMom) return "mom";
   return TILE_GROUP_COLOR[cat.group] ?? cat.color;
 }
 
