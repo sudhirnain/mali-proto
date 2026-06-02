@@ -15,6 +15,7 @@ import { categoryArt } from "@/lib/category-art";
 import { useBaby } from "@/lib/cold-mode";
 import { MILESTONES, currentMilestoneBucket } from "@/lib/mock-milestones";
 import { CustomMilestoneSheet } from "@/components/CustomMilestoneSheet";
+import { articleForCategory } from "@/lib/articles";
 import { useState } from "react";
 import Image from "next/image";
 
@@ -481,7 +482,9 @@ function ChartSection({ cat }: { cat: Category }) {
   const h = 175;
   const padL = 26;
   const padR = 10;
-  const padT = 14;
+  // padT leaves a clear row above the plot for the unit label — at 14 the
+  // unit collided with the top tick value (Jonas circled "kg"/"80").
+  const padT = 20;
   const padB = 22;
 
   const isDots = DOTS_CATEGORIES.has(cat.id);
@@ -590,11 +593,11 @@ function ChartSection({ cat }: { cat: Category }) {
               {t.label}
             </text>
           ))}
-          {/* Y-axis unit (top-left corner). */}
+          {/* Y-axis unit — its own row above the plot, clear of the top tick. */}
           {!isDots && yUnit && (
             <text
               x={padL - 4}
-              y={padT - 2}
+              y={9}
               textAnchor="end"
               fontSize="8"
               fontWeight="600"
@@ -613,11 +616,14 @@ function ChartSection({ cat }: { cat: Category }) {
           )}
           {/* Band percentile legend (matches the My Baby "Top 3% to Bottom 3%"
            *  treatment so the band reads as a scientific reference, not
-           *  a vague tinted shape). */}
+           *  a vague tinted shape). Bottom-right — the band's lower envelope
+           *  stays well above it at every range, and the top-right corner
+           *  belongs to the "now" value label (they collided — Jonas circled
+           *  "3rd – 97th percentile"/"76 kg"). */}
           {!isDots && (
             <text
               x={w - padR - 4}
-              y={padT + 6}
+              y={h - padB - 5}
               textAnchor="end"
               fontSize="7.5"
               fill="var(--color-cat-food)"
@@ -715,7 +721,16 @@ function ChartSection({ cat }: { cat: Category }) {
           {cat.id === "weight-mom" ? "You are " : "Lu is "}
           <span className="font-semibold text-neutral-900">on track</span>{" "}
           {cat.id === "weight-mom" ? "with healthy weight gain." : "for healthy growth."}{" "}
-          <span className="text-[var(--color-primary)] font-semibold">Read more</span>
+          {articleForCategory(cat.id) ? (
+            <Link
+              href={`/article/${articleForCategory(cat.id)!.slug}`}
+              className="text-[var(--color-primary)] font-semibold active:opacity-70"
+            >
+              Read more
+            </Link>
+          ) : (
+            <span className="text-[var(--color-primary)] font-semibold">Read more</span>
+          )}
         </p>
       </div>
     </div>

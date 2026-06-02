@@ -10,6 +10,7 @@ import { useBaby } from "@/lib/cold-mode";
 import { useJournalStore, useEntries } from "@/lib/journal-store";
 import { formatLongDate } from "@/lib/format";
 import { milestoneArtOrFallback } from "@/lib/milestone-art";
+import { MILESTONE_CHART_IMAGES, type MilestoneChartImage } from "@/lib/milestone-chart-images";
 
 type Tab = "overview" | "details" | "chart";
 
@@ -384,6 +385,7 @@ function DetailsTab({ milestone }: { milestone: Milestone }) {
 }
 
 function ChartTab({ milestone, babyName }: { milestone: Milestone; babyName: string }) {
+  const chartImage = MILESTONE_CHART_IMAGES[milestone.id];
   return (
     <div className="bg-white rounded-3xl p-4 shadow-sm">
       <div className="flex items-baseline justify-between mb-2">
@@ -392,16 +394,59 @@ function ChartTab({ milestone, babyName }: { milestone: Milestone; babyName: str
         </div>
         <div className="text-xs text-neutral-500">{milestone.bucket} months range</div>
       </div>
-      <SigmoidChart median={milestone.medianAgeMonths} />
+      {/* s12 "graphs as pictures": when the curve only exists as a CMS image,
+       *  render the image in the same card and overlay the one personalized
+       *  element — the "now" marker — at the calibrated x for the baby's age.
+       *  Milestones without an image keep the live SVG chart. */}
+      {chartImage ? (
+        <StaticChartImage cfg={chartImage} babyName={babyName} />
+      ) : (
+        <SigmoidChart median={milestone.medianAgeMonths} />
+      )}
       <p className="text-sm text-neutral-700 leading-relaxed mt-3">
         Most babies reach <span className="font-semibold text-neutral-900">{milestone.label.toLowerCase()}</span>{" "}
         around <span className="font-semibold text-neutral-900">{milestone.medianAgeMonths.toFixed(1)} months</span>.{" "}
         {babyName} is at <span className="font-semibold text-neutral-900">{BABY_AGE_MONTHS.toFixed(1)} months</span>.{" "}
-        <span className="text-[var(--color-primary)] font-semibold">Read more</span>
+        <Link href="/article/milestones-pace" className="text-[var(--color-primary)] font-semibold active:opacity-70">
+          Read more
+        </Link>
       </p>
       <p className="text-xs text-neutral-400 mt-2">
         Source: Denver Developmental Screening Tests
       </p>
+    </div>
+  );
+}
+
+/** Their static chart PNG + our overlaid "now" marker (s12 image-mode). */
+function StaticChartImage({ cfg, babyName }: { cfg: MilestoneChartImage; babyName: string }) {
+  const months = Math.min(BABY_AGE_MONTHS, cfg.monthsMax);
+  const leftPct = (cfg.x0 + (months / cfg.monthsMax) * (cfg.x1 - cfg.x0)) * 100;
+  return (
+    <div className="relative rounded-xl overflow-hidden">
+      <Image
+        src={cfg.src}
+        alt=""
+        width={945}
+        height={766}
+        className="w-full h-auto"
+      />
+      {/* now marker — the only personalized element, no curve data needed */}
+      <div
+        aria-hidden
+        className="absolute border-l border-dashed border-[var(--color-primary-dark)]"
+        style={{
+          left: `${leftPct}%`,
+          top: `${cfg.yTop * 100}%`,
+          height: `${(cfg.yBottom - cfg.yTop) * 100}%`,
+        }}
+      />
+      <span
+        className="absolute -translate-x-1/2 px-1.5 py-0.5 rounded-full bg-[var(--color-primary-dark)] text-white text-[9px] font-semibold whitespace-nowrap"
+        style={{ left: `${leftPct}%`, top: `${cfg.yTop * 100 - 6}%` }}
+      >
+        {babyName} · {BABY_AGE_MONTHS.toFixed(1)} mo
+      </span>
     </div>
   );
 }

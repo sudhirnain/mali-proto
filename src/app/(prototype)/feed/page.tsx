@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo } from "react";
 import { FeedHeader } from "@/components/FeedHeader";
 import { PrimaryFAB } from "@/components/PrimaryFAB";
@@ -150,6 +151,7 @@ export default function FeedPage() {
         <ArticleCard
           eyebrow="Nutrition"
           title="The importance of DHA and Omega-3 in pregnancy"
+          slug="dha-omega3"
           stats={{ comments: 2, hearts: "951" }}
           body="DHA is an omega-3 fatty acid that is vital to your baby's development. It plays a key role in the formation of retinal and brain tissue, so it's very vital in developing healthy eyes and brains."
         />
@@ -163,6 +165,7 @@ export default function FeedPage() {
         <ArticleCard
           eyebrow="3rd trimester"
           title="What's safe to eat — and what to skip"
+          slug="safe-to-eat"
           stats={{ comments: 12, hearts: "1.2K" }}
           body="Keep cravings happy without crossing into risk: pasteurized dairy is fine, soft cheeses aren't. Cooked fish is great, raw or high-mercury fish should sit out the third trimester. Caffeine under 200mg a day. Hydrate more than you think you need to."
         />
@@ -170,6 +173,7 @@ export default function FeedPage() {
         <ArticleCard
           eyebrow="Preparing"
           title="Your hospital bag — the short version"
+          slug="hospital-bag"
           stats={{ comments: 4, hearts: "688" }}
           body="Pack between weeks 35 and 36. Three categories: things for labor (lip balm, hair tie, slip-on shoes), things for after (loose pajamas, your own pillow), and things for the baby (going-home outfit in two sizes, car-seat tested ahead of time)."
         />
@@ -177,6 +181,7 @@ export default function FeedPage() {
         <ArticleCard
           eyebrow="Wellbeing"
           title="Sleep tips for late pregnancy"
+          slug="sleep-late-pregnancy"
           stats={{ comments: 6, hearts: "1.1K" }}
           body="Side-sleeping (preferably left) keeps blood flowing to the placenta. A pillow between your knees aligns the hips; a small one under the belly takes the weight off the lower back. Avoid lying flat on your back after week 28."
         />
@@ -184,6 +189,7 @@ export default function FeedPage() {
         <ArticleCard
           eyebrow="What to expect"
           title="Braxton-Hicks vs. the real thing"
+          slug="braxton-hicks"
           stats={{ comments: 9, hearts: "844" }}
           body="Practice contractions feel like a tightening that comes and goes — irregular, no progression. Real contractions get closer together, longer, and stronger over time. The 5-1-1 rule: contractions 5 minutes apart, lasting 1 minute, for 1 hour — time to call."
         />
@@ -199,11 +205,14 @@ function ArticleCard({
   title,
   body,
   stats,
+  slug,
 }: {
   eyebrow: string;
   title: string;
   body: string;
   stats: { comments: number; hearts: string };
+  /** Article slug — wires "Read more →" to the article reader (round-2 s10). */
+  slug?: string;
 }) {
   return (
     <div className="bg-white rounded-3xl p-5 shadow-sm">
@@ -230,12 +239,21 @@ function ArticleCard({
         {title}
       </h3>
       <p className="text-sm text-neutral-700 leading-relaxed">{body}</p>
-      <button
-        type="button"
-        className="text-sm font-semibold text-[var(--color-primary-dark)] mt-3 active:opacity-70"
-      >
-        Read more →
-      </button>
+      {slug ? (
+        <Link
+          href={`/article/${slug}`}
+          className="inline-block text-sm font-semibold text-[var(--color-primary-dark)] mt-3 active:opacity-70"
+        >
+          Read more →
+        </Link>
+      ) : (
+        <button
+          type="button"
+          className="text-sm font-semibold text-[var(--color-primary-dark)] mt-3 active:opacity-70"
+        >
+          Read more →
+        </button>
+      )}
     </div>
   );
 }

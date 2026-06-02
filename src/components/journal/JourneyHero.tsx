@@ -21,9 +21,13 @@ let dueDateOverride: string | undefined;
  * baby is about the size of a <X>" + image · progress · tappable Due date
  * (s3 "due date should link").
  *
- * The size image is a placeholder reusing the weekly watercolor — the brief
- * (slide 3 "add baby image as animal") wants a baby-as-creature illustration
- * (e.g. a ladybug) which isn't an asset we have yet.
+ * Size comparison is the ANIMAL (s3 "add baby image as animal" + the ladybug
+ * mock) — emoji placeholder in the image square until their animal art lands;
+ * falls back to the weekly watercolor + sizeFruit when no animal is mapped.
+ *
+ * Bottom-row link uses the MilestoneHero treatment (dotted underline, text
+ * "→") — Jonas s4: "Different style and arrow the same action… The one above
+ * [Milestones] looks correct." Keep the two cards' chrome identical.
  */
 export function JourneyHero({ variant = "section" }: { variant?: "section" | "header" } = {}) {
   const baby = useBaby();
@@ -45,18 +49,27 @@ export function JourneyHero({ variant = "section" }: { variant?: "section" | "he
           <div className="text-[10.5px] uppercase tracking-[0.1em] font-bold text-[var(--color-primary-dark)]">
             {TRIMESTER_LABEL[trimesterIdx]} trimester
           </div>
-          <div className="serif text-[24px] font-semibold text-neutral-900 leading-none tracking-tight mt-1">
+          <div className="serif text-[21px] font-semibold text-neutral-900 leading-none tracking-tight mt-1">
             Week {week}
           </div>
-          {baby.sizeFruit && (
+          {(baby.sizeAnimal || baby.sizeFruit) && (
             <div className="text-[12.5px] text-neutral-700 leading-snug mt-1.5">
-              Your baby is about the size of {articleFor(baby.sizeFruit)}{" "}
-              <span className="font-semibold text-neutral-900">{baby.sizeFruit.toLowerCase()}</span>
+              Your baby is about the size of{" "}
+              {articleFor(baby.sizeAnimal?.label ?? baby.sizeFruit!)}{" "}
+              <span className="font-semibold text-neutral-900">
+                {(baby.sizeAnimal?.label ?? baby.sizeFruit!).toLowerCase()}
+              </span>
             </div>
           )}
         </div>
-        <span className="relative w-14 h-14 rounded-2xl overflow-hidden bg-white shrink-0">
-          <Image src={weekArt} alt="" fill sizes="56px" className="object-contain p-0.5" />
+        <span className="relative w-16 h-16 rounded-2xl overflow-hidden bg-white/70 flex items-center justify-center shrink-0">
+          {baby.sizeAnimal ? (
+            <span className="text-[34px] leading-none" aria-hidden>
+              {baby.sizeAnimal.emoji}
+            </span>
+          ) : (
+            <Image src={weekArt} alt="" fill sizes="64px" className="object-contain p-0.5" />
+          )}
         </span>
       </div>
 
@@ -74,12 +87,9 @@ export function JourneyHero({ variant = "section" }: { variant?: "section" | "he
               type="button"
               onClick={() => setEditing(true)}
               aria-label="Change due date"
-              className="font-semibold text-[var(--color-primary-dark)] inline-flex items-center gap-0.5 active:opacity-70"
+              className="truncate ml-3 underline decoration-dotted underline-offset-4 active:opacity-70"
             >
-              Due date {dueDate}
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
+              Due date {dueDate} →
             </button>
           )}
         </div>

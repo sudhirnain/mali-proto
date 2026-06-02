@@ -5,6 +5,7 @@ import { DemoNavigator } from "./DemoNavigator";
 import { BirthHandoff } from "./BirthHandoff";
 import { ActiveTimerChip } from "./ActiveTimerChip";
 import { PhotoLightboxProvider } from "./PhotoLightbox";
+import { useStoredColorTweaks } from "./TweakPanel";
 import { usePhase } from "@/lib/phase";
 
 /**
@@ -16,6 +17,8 @@ import { usePhase } from "@/lib/phase";
  */
 export function MobileFrame({ children }: { children: ReactNode }) {
   const { phase } = usePhase();
+  // Re-apply any client color overrides saved from the Adjust panel.
+  useStoredColorTweaks();
   return (
     <div
       data-phase={phase}

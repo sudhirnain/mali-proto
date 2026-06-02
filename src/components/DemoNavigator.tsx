@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { usePhase, PHASE_LABELS, type Phase } from "@/lib/phase";
 import { useColdMode } from "@/lib/cold-mode";
+import { TweakPanel } from "./TweakPanel";
 
 const PHASES: Phase[] = ["pregnancy", "parenting"];
 
@@ -143,6 +144,12 @@ export function DemoNavigator({ compact = false }: { compact?: boolean }) {
               router.push("/feed");
             }}
           />
+        </Section>
+      </div>
+
+      <div className="px-3 py-3 border-t border-neutral-100">
+        <Section label="Adjust (for Mali team)">
+          <TweakPanel />
         </Section>
       </div>
 
