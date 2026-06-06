@@ -224,7 +224,7 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <SegmentedToggle
         options={["Manual", "Live timer"] as const}
         value={mode}
@@ -520,7 +520,7 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <SegmentedToggle
         options={["Manual", "Live timer"] as const}
         value={mode}
