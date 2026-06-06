@@ -9,6 +9,8 @@ import { useEntries, useJournalStore } from "@/lib/journal-store";
 import { JournalEntryCard } from "@/components/JournalEntryCard";
 import { EmptyState } from "@/components/EmptyState";
 import { Illustration } from "@/components/Illustration";
+import { CategoryBarChart } from "@/components/CategoryBarChart";
+import { MomWeightChart } from "@/components/MomWeightChart";
 import { isSameDay } from "@/lib/format";
 import { MilestonesBrowser } from "@/components/MilestonesBrowser";
 import { categoryArt } from "@/lib/category-art";
@@ -19,7 +21,18 @@ import { articleForCategory } from "@/lib/articles";
 import { useState } from "react";
 import Image from "next/image";
 
-const PATTERN_CATEGORIES = new Set(["nursing", "sleep", "diaper", "bottle", "pumping"]);
+// Care/health categories that show the "last 30 days" bar chart (Jonas round-3
+// s9–17). Replaces the old 7-day dot Pattern view; adds charts to temperature +
+// hydration which previously had none.
+const BAR_CHART_CATEGORIES = new Set([
+  "sleep",
+  "nursing",
+  "diaper",
+  "bottle",
+  "pumping",
+  "temperature",
+  "hydration",
+]);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -139,8 +152,11 @@ export default function CategoryDetailPage() {
         </div>
       )}
 
-      {cat.hasGraph && entries.length > 0 && <ChartSection cat={cat} />}
-      {PATTERN_CATEGORIES.has(cat.id) && entries.length > 0 && <PatternSection cat={cat} entries={entries} />}
+      {/* Mom weight is phase-aware (Jonas s18: ideal-gain in pregnancy, 12-month
+       *  postpartum in parenting); other growth categories keep the line+band. */}
+      {cat.hasGraph && entries.length > 0 &&
+        (cat.id === "weight-mom" ? <MomWeightChart /> : <ChartSection cat={cat} />)}
+      {BAR_CHART_CATEGORIES.has(cat.id) && entries.length > 0 && <CategoryBarChart cat={cat} />}
 
       {/* Entries */}
       <div className="mt-2">
@@ -317,92 +333,6 @@ function headlineFor(cat: Category, entries: Entry[]): string {
     default:
       return entries[0]?.meta ?? cat.label;
   }
-}
-
-/* ------------------------------------------------------------------ */
-/*  Pattern section — 24-hour band of event times across last 7 days  */
-/* ------------------------------------------------------------------ */
-
-function PatternSection({ cat, entries }: { cat: Category; entries: Entry[] }) {
-  const cutoff = new Date(TODAY_DATE.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const recent = entries.filter((e) => new Date(e.at) >= cutoff);
-  // Bucket by hour of day (0..23) for a dot-density view
-  const byHour: number[] = Array(24).fill(0);
-  for (const e of recent) byHour[new Date(e.at).getHours()] += 1;
-  const max = Math.max(1, ...byHour);
-
-  const w = 320;
-  const h = 70;
-  const padL = 6;
-  const padR = 6;
-  const padT = 6;
-  const padB = 18;
-  const col = (i: number) => padL + (i / 23) * (w - padL - padR);
-  const dotR = (count: number) => 2 + (count / max) * 5; // 2-7px radius
-
-  return (
-    <div className="px-4 pt-5">
-      <div className="bg-white rounded-3xl p-4 shadow-sm">
-        <div className="flex items-baseline justify-between mb-2">
-          <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
-            Pattern · last 7 days
-          </div>
-          <div className="text-xs text-neutral-500">{recent.length} entries</div>
-        </div>
-        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto" preserveAspectRatio="none">
-          {/* Hour gridlines at 6am / noon / 6pm / midnight */}
-          {[0, 6, 12, 18].map((hr) => (
-            <line
-              key={hr}
-              x1={col(hr)}
-              y1={padT}
-              x2={col(hr)}
-              y2={h - padB}
-              stroke="var(--color-neutral-200)"
-              strokeWidth={1}
-              strokeDasharray="2 3"
-            />
-          ))}
-          {/* Event dots */}
-          {byHour.map((count, hr) => {
-            if (count === 0) return null;
-            return (
-              <circle
-                key={hr}
-                cx={col(hr)}
-                cy={(h - padB + padT) / 2}
-                r={dotR(count)}
-                fill={`var(--color-${cat.color})`}
-                opacity={0.7}
-              />
-            );
-          })}
-          {/* X-axis hour labels */}
-          {[
-            { hr: 0, label: "12a" },
-            { hr: 6, label: "6a" },
-            { hr: 12, label: "12p" },
-            { hr: 18, label: "6p" },
-            { hr: 23, label: "11p" },
-          ].map((t) => (
-            <text
-              key={t.hr}
-              x={col(t.hr)}
-              y={h - 4}
-              textAnchor="middle"
-              fontSize="9"
-              fill="var(--color-neutral-400)"
-            >
-              {t.label}
-            </text>
-          ))}
-        </svg>
-        <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
-          Dot size = how often {cat.label.toLowerCase()} happens at that hour across the week.
-        </p>
-      </div>
-    </div>
-  );
 }
 
 /* ------------------------------------------------------------------ */

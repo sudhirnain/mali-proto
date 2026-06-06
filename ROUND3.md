@@ -25,7 +25,19 @@ mom tiles, temperature fever banner, `…` removed). Files touched:
 `categories.ts`, `log/page.tsx`, `log/[category]/page.tsx` (contractions, kicks,
 hydration units, dual-timer `NursingForm`, `DoneBar` label), `journal/entry/[entryId]/page.tsx`,
 `journal/category/[id]/page.tsx` (temp warning), `components/ActiveTimerChip.tsx`,
-`lib/mock-entries.ts` (nursing meta → `(L)/(R)`). **Phase 2 (charts) not started.**
+`lib/mock-entries.ts` (nursing meta → `(L)/(R)`).
+
+### Phase 2 status — ✅ DONE & verified (Jun 6)
+All chart items shipped; `tsc --noEmit` clean; headless-Chrome QA passed on every
+new chart. New `components/CategoryBarChart.tsx` — a shared "last 30 days" bar
+chart (deterministic representative data; real data is backend-supplied) wired
+for **sleep** (grouped Baby/Mom bars + toggle, s9), **nursing** (stacked
+yellow=success / grey=failure, s10–12), **pumping/bottle** (ml, s13–14),
+**diaper** (stacked by type + legend, s15), **temperature** (≥38 °C in red, s16),
+**water** (+2.5 L reference line, s17). New `components/MomWeightChart.tsx` —
+phase-aware: pregnancy = ideal-gain band, parenting = last-12-months (s18).
+Milestone `SigmoidChart` axes fixed — `%`/`100` no longer collide, clean months
+row (s3). `PatternSection` (old 7-day dots) removed.
 
 ## Traceability — slides 3–23
 

@@ -458,8 +458,10 @@ function SigmoidChart({ median }: { median: number }) {
   const h = 160;
   const padL = 26;
   const padR = 14;
-  const padT = 14;
-  const padB = 28;
+  // Extra top/bottom room so the 100% tick + "%" unit don't collide and the
+  // months ticks + axis title each get a clean row (Jonas round-3 s3).
+  const padT = 24;
+  const padB = 32;
   const xMin = 0;
   const xMax = Math.max(median * 2.2, 12); // show enough range past median
   const sx = (x: number) => padL + ((x - xMin) / (xMax - xMin)) * (w - padL - padR);
@@ -495,9 +497,9 @@ function SigmoidChart({ median }: { median: number }) {
           {Math.round(p * 100)}
         </text>
       ))}
-      {/* x-axis labels */}
-      {[0, Math.round(xMax / 3), Math.round((2 * xMax) / 3), Math.round(xMax)].map((x) => (
-        <text key={`x${x}`} x={sx(x)} y={h - 10} textAnchor="middle" fontSize="9" fill="var(--color-neutral-400)">
+      {/* x-axis month ticks (deduped so small ranges don't double-label) */}
+      {Array.from(new Set([0, Math.round(xMax / 3), Math.round((2 * xMax) / 3), Math.round(xMax)])).map((x) => (
+        <text key={`x${x}`} x={sx(x)} y={h - 14} textAnchor="middle" fontSize="9" fill="var(--color-neutral-400)">
           {x}
         </text>
       ))}
@@ -511,9 +513,10 @@ function SigmoidChart({ median }: { median: number }) {
       <text x={nowX} y={padT - 2} textAnchor="middle" fontSize="9" fill="var(--color-primary-dark)" fontWeight="600">
         now
       </text>
-      {/* axis labels */}
-      <text x={padL - 18} y={padT + 6} textAnchor="start" fontSize="9" fill="var(--color-neutral-500)">%</text>
-      <text x={w - padR} y={h - 4} textAnchor="end" fontSize="9" fill="var(--color-neutral-500)">months</text>
+      {/* y unit — top-left, clear of the 100 tick (Jonas s3: % and 100 collided) */}
+      <text x={padL - 4} y={12} textAnchor="end" fontSize="8" fontWeight="600" fill="var(--color-neutral-700)">%</text>
+      {/* x axis title — centered on its own row below the month ticks */}
+      <text x={(padL + w - padR) / 2} y={h - 3} textAnchor="middle" fontSize="8" fill="var(--color-neutral-500)">months</text>
     </svg>
   );
 }
