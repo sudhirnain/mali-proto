@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getCategory, type Category } from "@/lib/categories";
@@ -14,6 +14,12 @@ import { useActiveTimer } from "@/lib/active-timer";
 import { useContractionSession } from "@/lib/contraction-session";
 import { tinyHaptic } from "@/lib/haptic";
 
+/** Lets a form register an icon button into the page header's right slot (e.g.
+ *  nursing's live-timer reset), so secondary actions stay out of the form's
+ *  vertical flow. Null for forms that don't use it — the slot stays an empty
+ *  spacer, balancing the back chevron. */
+const HeaderSlotContext = createContext<(node: ReactNode) => void>(() => {});
+
 export default function LogEntryPage() {
   const params = useParams<{ category: string }>();
   const router = useRouter();
@@ -23,6 +29,7 @@ export default function LogEntryPage() {
   const cat = getCategory(id);
   const { getEntry } = useJournalStore();
   const editing = editId ? getEntry(editId) : undefined;
+  const [headerRight, setHeaderRight] = useState<ReactNode>(null);
 
   // The Milestone form has no real "add new event" affordance — milestones are
   // selected from a curated list. Route there directly so the salmon-walled
@@ -57,14 +64,17 @@ export default function LogEntryPage() {
           </svg>
         </button>
         <h1 className="text-lg font-semibold text-neutral-900">{editing ? `Edit ${cat.label.toLowerCase()}` : cat.label}</h1>
-        {/* Dead 3-dot menu removed (Jonas round-3 s12 "remove here and everywhere"). */}
-        <span className="w-9" aria-hidden />
+        {/* Forms register a header action here (e.g. nursing's reset); the dead
+         *  3-dot menu is gone (Jonas round-3 s12 "remove here and everywhere"). */}
+        <div className="w-9 h-9 flex items-center justify-center">{headerRight}</div>
       </header>
 
       {/* White card content area */}
       <div className="mx-3 bg-white rounded-3xl p-5 shadow-sm">
         <CategoryIconBadge cat={cat} />
-        <FormBody cat={cat} editing={editing} />
+        <HeaderSlotContext.Provider value={setHeaderRight}>
+          <FormBody cat={cat} editing={editing} />
+        </HeaderSlotContext.Provider>
       </div>
     </div>
   );
@@ -419,6 +429,32 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     setRightAcc(0);
   };
 
+  // Reset lives in the page header (top-right), out of the form's vertical
+  // flow — shown only in Live mode once a side has run (never a dead control).
+  const setHeaderRight = useContext(HeaderSlotContext);
+  const resetRef = useRef(resetTimers);
+  resetRef.current = resetTimers;
+  const showReset = mode === "Live timer" && (leftRunning || rightRunning || leftAcc > 0 || rightAcc > 0);
+  useEffect(() => {
+    setHeaderRight(
+      showReset ? (
+        <button
+          type="button"
+          aria-label="Reset timers"
+          title="Reset timers"
+          onClick={() => resetRef.current()}
+          className="w-9 h-9 flex items-center justify-center text-neutral-700 active:opacity-60"
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+          </svg>
+        </button>
+      ) : null,
+    );
+    return () => setHeaderRight(null);
+  }, [showReset, setHeaderRight]);
+
   const metaFor = (lSec: number, rSec: number) => {
     const lMin = Math.round(lSec / 60);
     const rMin = Math.round(rSec / 60);
@@ -525,15 +561,6 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
                 </div>
               );
             })}
-          </div>
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={resetTimers}
-              className="text-xs font-medium text-neutral-500 underline underline-offset-2 active:opacity-70"
-            >
-              Reset timers
-            </button>
           </div>
           {qualityField}
           {commentsField}
