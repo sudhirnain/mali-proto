@@ -481,11 +481,11 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     save({ at: new Date().toISOString(), durationMin: total, meta, photo });
   };
 
+  // Uses the standard <Field> wrapper so its label + label-to-control gap match
+  // Comments / Photo exactly (don't hand-roll the label spacing — that was the
+  // 6px-vs-8px drift).
   const qualityField = (
-    <div>
-      <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
-        How did it go? (optional)
-      </div>
+    <Field label="How did it go? (optional)">
       <div className="flex gap-2">
         {(["Poor", "Good", "Great"] as const).map((q) => (
           <button
@@ -504,7 +504,7 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
           </button>
         ))}
       </div>
-    </div>
+    </Field>
   );
 
   const commentsField = (
