@@ -1,81 +1,57 @@
 # Handoff — Mali journal redesign
 
-Last updated: **2026-06-02** (end of round-2 session 3). The auto-memory (`~/.claude/projects/.../memory/MEMORY.md`) is the living pickup doc — this file is the coarser summary.
+Last updated: **2026-06-02** (end of round-2 session 4). The auto-memory (`~/.claude/projects/.../memory/MEMORY.md` → `project_round2_feedback`) is the living pickup doc — this file is the coarser summary.
 
 For project conventions read [CLAUDE.md](CLAUDE.md) first. For the screen-by-screen redesign spec read [SPEC.md](SPEC.md).
 
 ## TL;DR
 
-**Round-2 feedback slides 3–17 are CLOSED and fully deployed** (HEAD `f36b110` live on `mali-proto.vercel.app`, no protection wall). The deck is now `mali-source/Mali 2026 New Journal.pptx` — Jonas comments on it live; re-pull before reviewing, and **view slide images, not just text** (drawn X-marks are feedback — the crossed-out "Right now" heading took 7 review rounds because text-only extraction can't see shapes). Decisions locked: **A1 = keep teal** parenting chrome (mom elements coral); tiles color by **domain** (Food+Activity share green); icons in tiles, cartoons only on detail heroes. Still open in 3–17: **s10** article reader, **s12** legacy-graphs-as-images, **s15** icon-weight rule (partial), **s3** baby-as-animal image (asset-blocked on Jonas). Slides 18+ deliberately not started. Chrome MCP is connected but every browser action is denied by the extension's agent-permission layer — visual QA still runs through Sudhir's screenshots.
+**Everything is shipped and deployed.** Prod (`mali-proto.vercel.app`, no auth wall) == local HEAD `86dbb90` (deploy `fjs5fpr0t`, verified). Working tree clean. **GitHub `origin/main` is ~31 commits behind** — deploys go via Vercel CLI not git, so the remote lags; a `git push` is the only housekeeping left (ask Sudhir before pushing).
 
-> The sections below are from 2026-05-28 and largely superseded — most queued items shipped. Kept for history; trust memory + SPEC Part B2 instead.
+Round-2 deck (`mali-source/Mali 2026 New Journal.pptx`) slides 3–17 are **all closed** as of this session — including the last stragglers s10 (article reader) and s12 (chart image-mode). Jonas comments on the deck live; re-pull before reviewing and **view slide images, not just text** (drawn X-marks are feedback — text extraction can't see shapes).
 
-## What's shipped (✅)
+**The one big open is replying to Jonas** — draft in memory `project_email_reply_draft`, needs this session's wins folded in. Slides 18+ deliberately not started.
 
-Commits on `main`, deployed to https://mali-proto.vercel.app (private under team `sudhir-nain-s-projects`).
+**Decisions locked:** A1 = keep teal parenting chrome (mom elements coral/pink); **production APK palette is the default** (froly `#f08180` / maliRed `#d14747` / paradiso `#2c746d` etc., extracted from `mali-2.9.4.xapk`); tiles color via `tileColor()` (group color, mom=maliRed/azalea), detail surfaces via domain `cat.color`; week-size = **produce, not animals** (week-32 = "kale leaf", site-verified — `sizeAnimal` is an unseeded hook awaiting Mali's art).
 
-- **Initial prototype** (`a81bba7`) — entire feed/journal/forms/data layer/mock data/raster art
-- **Compact pregnancy header, photo attach, sticky timer chip** (`edbdf76`)
-  - StatStrip pregnancy now: mom-weight | Sarah + Week N · Day D | baby-weight (newborn icon)
-  - 5 mini quick-log tiles in one row (symptoms · hydration · sleep · contractions · mood)
-  - Optional photo attach on Timer / Measurement / Event / Note forms (skipped Kicks/Contractions per Jonas)
-  - `ActiveTimer` context + sticky `ActiveTimerChip` that survives navigation
-- **GitHub repo published** (private) — https://github.com/sudhirnain/mali-proto
+Chrome MCP: tab management works now, but `navigate` is still denied at the extension's agent-permission layer — **headless Chrome (shoot ≥600px wide; narrower clips the right edge) is the QA path.**
 
-## What's blocked, waiting on Sudhir (🔴)
+## What shipped in session 4 (✅, all deployed)
 
-1. **Vercel Deployment Protection = 401** at https://mali-proto.vercel.app. Until this flips, Jonas can't see the live build. Fix path:
-   - Vercel Dashboard → mali-proto → Settings → Deployment Protection → set to **Disabled** (or *Only Preview Deployments*)
-2. **Pink-only color (A1)** — RE-OPENED by Jonas's follow-up email as an opinion question. Reply drafted; Sudhir needs to send + wait for Jonas's read on the accent sub-question. **Blocks** removing the teal/coral phase split, BirthHandoff gradient swap, and Mom-track visual treatment (A2).
-3. **Mom-track in parenting visual** — biggest open design question (see SPEC.md A2). Blocked on A1 outcome. Pill, colored row bg, side strip, or "For mom" subsection?
-4. **Solids/Vaccinations/etc. forms** — DECIDE chips vs free-text vs both with "Other" — see SPEC.md Part C.
-5. **Sponsor/Cryoviva slot** (slide 55) — yes or no for the prototype.
+- **Contraction tracker rewrite** (`00aa8a8`) — was a hardcoded `00:45` headline + `running=true` on mount + state that died on nav (Jonas "still don't understand"). Now a persistent session (`ContractionSessionProvider`) + ActiveTimer chip, "like sleep." Hero clock is **state-swapped** (`abb5f0c`): running = current duration + frozen "after a X gap" line; idle = ticking "Since last contraction" + static last-duration. One ticking clock at a time.
+- **s10 article reader** (`4ab3dcd`) — `/article/[slug]` + 8 mock articles in `articles.ts`; every "Read more" wired (feed cards, category insight, milestone chart).
+- **s12 chart image-mode** (`4ab3dcd`) — their static chart PNG (cropped from deck, marker healed out) in our card chrome with our overlaid "now" marker via per-image calibration (`milestone-chart-images.ts`, sample `m-face`).
+- **s3/s4** — JourneyHero size line = produce ("kale leaf"); due-date row restyled to the MilestoneHero dotted-underline `→` treatment Jonas approved.
+- **Trend-chart label collisions** (`4ab3dcd`) — `kg` unit on its own row, percentile legend moved off the value label.
+- **Production APK palette as default** (`9a54f45`) — extraction in `mali-source/notes/apk-brand-colors.md`.
+- **Icon/container color audit** (`5d5c3e5`, `9e981f1`) — QuickLogCard/WelcomeCard now use `tileColor()` (raw `cat.color` was Jonas's "icons don't match backgrounds"); mom tiles maliRed-on-azalea; cat-kicks/cat-milestone re-aliased coral→coral-dark; cat-growth `#e0566b`.
+- **Adjust panel** (`4ab3dcd`, `e95e18d`, `4418c31`, `86dbb90`) — DemoNavigator "Adjust (for Mali team)": designMode click-to-edit text + hex color inputs for brand/category vars, localStorage-persisted, brand groups start expanded.
+- **DemoNavigator slimmed** (`edb84b2`, `756e738`) — Jump-to + In-case-you-missed removed; now Phase/State/Adjust.
+- **`?phase=` deep link** (`5d5c3e5`) — `lastChangeSource` guard so BirthHandoff fires only on user switches.
 
-## What's queued to build, ready when Sudhir says go (🟢)
+## Open / next (🔴)
 
-All from [SPEC.md](SPEC.md) Part A. Roughly in dependency order:
+1. **Reply to Jonas** — the live open. Draft in memory `project_email_reply_draft`; fold in contraction tracker, article reader, chart image-mode, kale-leaf produce answer, Adjust panel. Has Sudhir sent anything yet?
+2. **GitHub push** — `origin/main` ~31 behind. Ask before pushing.
+3. **s15 full icon-weight pass** — only the doctor icon was done; the rest of the icon-vs-illustration sweep is pending.
+4. **Watch-item:** `cat-growth #e0566b` still sits close to froly primary — eyeball growth tiles vs MOM tiles; nudge deeper if too similar. Sudhir's call.
 
-| # | Item | Files | Size |
-|---|---|---|---|
-| A1 | ~~Drop teal/coral phase split; pink everywhere~~ — **BLOCKED** on Jonas confirm; see reply draft | [globals.css](src/app/globals.css), [BirthHandoff.tsx](src/components/BirthHandoff.tsx) | 1h |
-| NEW | Custom milestones: + → date / image / title / notes → tile with checkbox in overview | [journal/category/milestone/page.tsx](src/app/(prototype)/journal/category/milestone/page.tsx), [journal-store.tsx](src/lib/journal-store.tsx) | 1-2h |
-| A5a–b | Center subline format + right ring = due date (tappable to edit) | [StatStrip.tsx](src/components/StatStrip.tsx) | 1h |
-| A5d | Per-week watercolor in StatStrip center (parenting fallback = line-art baby unless user-photo) | [StatStrip.tsx](src/components/StatStrip.tsx) | 1h |
-| A5f | Replace "1" numeric badge in pregnancy with `due` red dot; keep numeric in parenting | [FeedHeader.tsx](src/components/FeedHeader.tsx) | 30m |
-| A6 | Scroll behavior: sticky pill, fruit-size momentary explainer, FAB hides | [FeedHeader.tsx](src/components/FeedHeader.tsx), [PrimaryFAB.tsx](src/components/PrimaryFAB.tsx) | 2-3h |
-| A9 | Delete `/journal/trimester/[t]` route + Timeline trimester wrappers | [journal/trimester/](src/app/(prototype)/journal/trimester/), [journal/page.tsx](src/app/(prototype)/journal/page.tsx) | 1h |
-| A8 | Lock big-photo card variant to note/picture/quote/milestone only | [JournalEntryCard.tsx](src/components/JournalEntryCard.tsx) | 30m |
-| A4 follow | Tap photo in entry → full-screen viewer + swipe | new [PhotoViewer.tsx](src/components/PhotoViewer.tsx), [JournalEntryCard.tsx](src/components/JournalEntryCard.tsx) | 2h |
-| A7 | Haptic on kick/feed taps | new [src/lib/haptic.ts](src/lib/haptic.ts), [/log/[category]/page.tsx](src/app/(prototype)/log/%5Bcategory%5D/page.tsx) | 30m |
-| A11 | Graph rules: dots for kicks/contractions, "Last 7 days" relabel | [journal/category/[id]/page.tsx](src/app/(prototype)/journal/category/%5Bid%5D/page.tsx) | 1h |
-| A13 | "Other" option on all preset pickers | [/log/[category]/page.tsx](src/app/(prototype)/log/%5Bcategory%5D/page.tsx) `presetsFor()` | 1h |
-| A14 | Birth handoff: due-date-aware trigger + X close | [BirthHandoff.tsx](src/components/BirthHandoff.tsx) | 1h |
-| — | Sleep/Bottle/Pumping form expansion (Daytime/Night, Quantity, Breast toggle) per slides 27/30/34/36 | [/log/[category]/page.tsx](src/app/(prototype)/log/%5Bcategory%5D/page.tsx) | 2h |
-| — | Kick goal-reached celebration screen (slide 17) | [/log/[category]/page.tsx](src/app/(prototype)/log/%5Bcategory%5D/page.tsx) KicksForm | 1h |
-| — | Milestone-with-photo: replace illustration with user photo in Overview tab (slide 49) | [journal/category/milestone/[milestoneId]/page.tsx](src/app/(prototype)/journal/category/milestone/%5BmilestoneId%5D/page.tsx) | 1h |
-| — | Inline quote card on feed ("Nice idea!" slide 56) | [feed/page.tsx](src/app/(prototype)/feed/page.tsx) | 1h |
-| — | "True contractions" educational paragraph on Contractions screen | [/log/[category]/page.tsx](src/app/(prototype)/log/%5Bcategory%5D/page.tsx) ContractionsForm | 30m |
-| — | Pull new pregnancy illustrations from Drive folder | https://drive.google.com/drive/folders/1m8W_ey6mBRes53oBXue4P6YvUCgSMr9v | 30m |
-| — | Plus FAB on every journal screen (audit) | [journal/](src/app/(prototype)/journal/) | 15m |
+## Owned externally (📦)
 
-Total: ~17–22 hours of work to fully respond to the review.
-
-## What's owned externally (📦)
-
-- **Graph SVGs** — Junporn (`@junporn@mali.me`) will produce. We render. Slide 13 *"How would you need us to create these graphs?"*. Spec the format: median line as `<path>`, ref band as filled `<path>`, dots as `<g>`. Tell Jonas.
-- **Missing screens** in deck (slides 23, 41 callouts) — assigned to Junporn, not us.
+- **Real animal art + week→animal map** — Mali/Junporn. Production currently uses produce; `sizeAnimal` is the ready hook, unseeded. Don't re-seed placeholders (the raccoon was rejected as not culturally right).
+- **Graph data** — s12 shipped against their static chart *images*; if they ever provide curve data we can swap to live SVG. Per-image calibration is the cost of image-mode — flag if their PNGs don't share one layout.
 
 ## Where things live
 
 | | Path |
 |---|---|
-| Production prototype | https://mali-proto.vercel.app (auth-walled until A1 below) |
+| Production prototype | https://mali-proto.vercel.app (no auth wall; prod == HEAD) |
 | GitHub | https://github.com/sudhirnain/mali-proto (private) |
 | Canonical spec | [SPEC.md](SPEC.md) |
 | Project conventions | [CLAUDE.md](CLAUDE.md) (also `@AGENTS.md` for Next-16 warning) |
 | Older priority list | [BACKLOG.md](BACKLOG.md) |
-| Source deck (with comments) | [mali-source/feedback.pptx](mali-source/feedback.pptx) |
-| Extracted text + comments | [mali-source/deck-extracted.txt](mali-source/deck-extracted.txt) |
+| Source deck (Jonas comments live) | mali-source/Mali 2026 New Journal.pptx (re-pull before reviewing; view slide IMAGES) |
+| APK brand-color extraction | [mali-source/notes/apk-brand-colors.md](mali-source/notes/apk-brand-colors.md) |
 | Meeting transcript | [mali-source/feedback.txt](mali-source/feedback.txt) |
 | Original brief | [mali-source/design-deck.pdf](mali-source/design-deck.pdf) |
 | Reference screenshots | [mali-source/screenshots/](mali-source/screenshots/) |
@@ -96,8 +72,9 @@ pnpm exec next build
 # Deploy
 vercel deploy --prod --yes
 
-# Re-extract deck if feedback.pptx is updated
-mkdir -p /tmp/mali-pptx && cd /tmp/mali-pptx && unzip -q ~/Projects/mali-proto/mali-source/feedback.pptx && python3 /tmp/extract_pptx.py > ~/Projects/mali-proto/mali-source/deck-extracted.txt
+# Re-extract deck media (view slide IMAGES — drawn marks are feedback)
+mkdir -p /tmp/mali-deck && cd /tmp/mali-deck && unzip -o -q "$HOME/Projects/mali-proto/mali-source/Mali 2026 New Journal.pptx" "ppt/media/*" "ppt/slides/_rels/*"
+# Map a slide N to its images: grep -o 'media/image[0-9]*\.[a-z]*' ppt/slides/_rels/slideN.xml.rels
 ```
 
 ## Notes for next agent
