@@ -39,6 +39,31 @@ phase-aware: pregnancy = ideal-gain band, parenting = last-12-months (s18).
 Milestone `SigmoidChart` axes fixed — `%`/`100` no longer collide, clean months
 row (s3). `PatternSection` (old 7-day dots) removed.
 
+### Phase 2 refinements (Jun 6 — slide-by-slide synthesis pass with Sudhir)
+Re-checked every chart against the written deck comments **and** the meeting
+transcript together. Five refinements shipped + verified (headless Chrome,
+populated mode):
+- **Nursing → per-session segments** (comment6 "Indicate sessions" + L127): each
+  day's bar is now a stack of individual sessions, each its own yellow/grey block
+  with a thin gap — not the earlier aggregate success/fail split. `CategoryBarChart`
+  gained a `sessions` config + render branch.
+- **Water → 2.5 L ghost-bar behind** (comment10 "show in light behind" + L149):
+  replaced the horizontal reference line with a faint full-height target bar
+  behind each day's actual intake (`ghost` config; `refLine` removed).
+- **Diaper → TYPE filter + Wet/Dirty labels** (slide 15 mock): the series toggle
+  (was sleep-only) generalised to a `toggle` config; diaper relabelled Pee/Poo →
+  **Wet/Dirty** to match the app's entries + his filter pills.
+- **Bottle + Temperature → "Read more"** links wired to two new article stubs
+  (`bottle-feeding-amounts`, `newborn-fever` in `lib/articles.ts`).
+- **Sleep → dynamic blurb** that follows the toggle (baby guidance, mom guidance,
+  or both) — also closes the slide-9 mom-guidance-copy gap.
+
+Decisions confirmed with Sudhir (Jun 6): keep avg in the footer (not Jonas's
+top-right); milestone m-face PNG stays a harmless fallback (Jonas's "raw data in
+the backend", L75, makes the live SVG the real path). Contraction "End session"
+(s22 comment12 `Call CTA "End session"` vs ASR "not"/"now") and nursing
+Poor/Good/Great (vs the binary he floated then walked back, L131) both stand.
+
 ## Traceability — slides 3–23
 
 | Slide | Ask | Phase |

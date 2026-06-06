@@ -18,6 +18,36 @@ export type Article = {
 };
 
 export const ARTICLES: Record<string, Article> = {
+  "bottle-feeding-amounts": {
+    slug: "bottle-feeding-amounts",
+    eyebrow: "Feeding",
+    title: "How much milk does a bottle-fed baby need?",
+    minutes: 3,
+    hero: "/mali-illustrations/happy_hands_up_baby.png",
+    heroBg: "var(--color-primary-softer)",
+    body: [
+      "In the first few weeks most bottle-fed babies take around 450–750 ml of milk across a day, split over 6–8 feeds. As the stomach grows this climbs to roughly 750–950 ml a day, usually in fewer, larger feeds.",
+      "Every baby is different, and appetite swings from day to day — a growth spurt can add a feed, a sleepy day can drop one. The daily total over a week tells you far more than any single bottle.",
+      "Follow hunger and fullness cues rather than forcing a target: rooting and hands to the mouth mean hungry; turning away and relaxing the hands mean done. A baby gaining steadily with plenty of wet diapers is getting enough.",
+      "If your baby consistently takes far more or far less than these ranges, or isn't gaining as expected, raise it at your next check-up.",
+    ],
+    source: "Mali editorial · reviewed by our medical team",
+  },
+  "newborn-fever": {
+    slug: "newborn-fever",
+    eyebrow: "Health",
+    title: "Fever in newborns — when it's an emergency",
+    minutes: 2,
+    hero: "/mali-illustrations/happy_hands_up_baby.png",
+    heroBg: "var(--color-primary-softer)",
+    body: [
+      "For a newborn, a temperature of 38 °C (100.4 °F) or higher is not something to watch at home — it is a medical emergency. Call your doctor or go to the emergency room straight away, even if your baby otherwise seems fine.",
+      "Young babies can become seriously unwell very quickly, and a fever may be the only early sign of an infection that needs treatment within hours. The younger the baby, the more urgent it is.",
+      "Measure rectally for the most reliable reading in the first months, and don't give any fever medicine to a newborn unless a doctor tells you to — the priority is getting them seen, not bringing the number down.",
+      "After the newborn weeks the threshold relaxes, but if you are ever unsure, trust your instinct and call. No one will mind you checking.",
+    ],
+    source: "Mali editorial · reviewed by our medical team",
+  },
   "healthy-weight-gain": {
     slug: "healthy-weight-gain",
     eyebrow: "Your body",

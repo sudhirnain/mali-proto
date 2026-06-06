@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Category } from "@/lib/categories";
 
 /**
@@ -52,10 +53,19 @@ type ChartConfig = {
   series: Series[];
   layout: "stack" | "group" | "single";
   data: number[][]; // [day][seriesIndex]
-  refLine?: { value: number; label: string };
+  /** Per-day session segments, each coloured by success — nursing "indicate sessions". */
+  sessions?: { min: number; ok: boolean }[][];
+  /** Faint target bar drawn behind each day's bar — water 2.5 L "show in light behind". */
+  ghost?: { value: number; label: string };
   threshold?: { at: number; color: string }; // single layout: recolor bars >= at
+  /** Show the series check-toggle pills (sleep baby/mom, diaper by type). */
+  toggle?: boolean;
+  /** "Read more" article slug appended after the blurb (bottle, temperature). */
+  articleSlug?: string;
   showLegend: boolean;
   blurb: string;
+  /** Blurb that varies with which series are visible (sleep baby/mom). */
+  blurbFor?: (visible: boolean[]) => string;
   /** Footer summary; receives which series are visible (sleep toggle). */
   footer: (visible: boolean[]) => string;
 };
@@ -80,8 +90,16 @@ function buildConfig(catId: string): ChartConfig {
         ],
         layout: "group",
         data,
+        toggle: true,
         showLegend: true,
         blurb: "Total hours of sleep per day. Newborns often need 14–17 h, toddlers 11–14 h.",
+        blurbFor: (vis) => {
+          const baby = "Newborns often need 14–17 h of total sleep, toddlers 11–14 h.";
+          const mom = "Pregnant mothers need ~8–9 h; new mothers often get 5–6 but need 10+ to heal.";
+          if (vis[1] && !vis[0]) return `Total hours of sleep per day. ${mom}`;
+          if (vis[0] && vis[1]) return `Total hours of sleep per day. ${baby} ${mom}`;
+          return `Total hours of sleep per day. ${baby}`;
+        },
         footer: (vis) => {
           const parts: string[] = [];
           if (vis[0]) parts.push(`${avgB} h baby`);
@@ -91,10 +109,18 @@ function buildConfig(catId: string): ChartConfig {
       };
     }
     case "nursing": {
-      const total = gen("nurseTot", (r) => 90 + r * 160); // 90–250 min
-      const failFrac = gen("nurseFail", (r) => (r < 0.7 ? r * 0.15 : 0.15 + r * 0.35));
-      const data = total.map((t, i) => [t * (1 - failFrac[i]), t * failFrac[i]]);
-      const avg = r0(mean(total));
+      // Each day is a stack of individual sessions, each its own segment coloured
+      // by success — Jonas s10–12 "Indicate sessions" (comment6 + meeting "you
+      // have one, two… six sessions… show them with the success").
+      const sessions = Array.from({ length: DAYS }, (_, d) => {
+        const n = 4 + Math.round(seeded("nurseN", d) * 7); // 4–11 sessions/day
+        return Array.from({ length: n }, (_, s) => ({
+          min: 10 + Math.round(seeded(`nurseMin${d}`, s) * 35), // 10–45 min/session
+          ok: seeded(`nurseOk${d}`, s) > 0.28, // ~72% go well
+        }));
+      });
+      const totals = sessions.map((day) => day.reduce((a, b) => a + b.min, 0));
+      const avg = r0(mean(totals));
       return {
         title: "Feeds",
         unit: "minutes",
@@ -106,9 +132,10 @@ function buildConfig(catId: string): ChartConfig {
           { label: "Unsuccessful", color: "#c9ccd1" },
         ],
         layout: "stack",
-        data,
+        data: totals.map((t) => [t]),
+        sessions,
         showLegend: true,
-        blurb: "Minutes nursed per day. Yellow = successful, grey = unsuccessful sessions.",
+        blurb: "Each block is one nursing session — yellow = successful, grey = unsuccessful. Minutes per day.",
         footer: () => `${avg} min daily avg`,
       };
     }
@@ -142,6 +169,7 @@ function buildConfig(catId: string): ChartConfig {
         layout: "single",
         data: ml.map((v) => [v]),
         showLegend: false,
+        articleSlug: "bottle-feeding-amounts",
         blurb: "Bottle-fed milk per day (ml). First month ~450–750 ml, later 750–950 ml.",
         footer: () => `${avg} ml daily avg`,
       };
@@ -161,16 +189,17 @@ function buildConfig(catId: string): ChartConfig {
         yMax: 10,
         yTicks: [0, 5, 10],
         series: [
-          { label: "Pee", color: "#f3c344" },
-          { label: "Poo", color: "#6b4423" },
+          { label: "Wet", color: "#f3c344" },
+          { label: "Dirty", color: "#6b4423" },
           { label: "Mixed", color: "#b08968" },
           { label: "Clean", color: "#d9dce0" },
           { label: "Other", color: "#6b7280" },
         ],
         layout: "stack",
         data,
+        toggle: true,
         showLegend: true,
-        blurb: "Diapers per day, by type.",
+        blurb: "Diapers per day by type — wet (yellow), dirty (brown), mixed (tan), clean (light grey), other (dark grey). Tap a type to show or hide it.",
         footer: () => `${avg} daily avg`,
       };
     }
@@ -189,6 +218,7 @@ function buildConfig(catId: string): ChartConfig {
         data: val.map((v) => [Math.min(41, Math.max(37, v))]),
         threshold: { at: 38, color: "#dc2626" },
         showLegend: false,
+        articleSlug: "newborn-fever",
         blurb: "Highest temperature measured per day. 38 °C+ is shown in red (see the warning above).",
         footer: () => `${avg} °C avg`,
       };
@@ -205,9 +235,9 @@ function buildConfig(catId: string): ChartConfig {
         series: [{ label: "Intake", color: "var(--color-cat-care)" }],
         layout: "single",
         data: liters.map((v) => [v]),
-        refLine: { value: 2.5, label: "2.5 L recommended" },
+        ghost: { value: 2.5, label: "2.5 L recommended" },
         showLegend: false,
-        blurb: "Total fluid per day. Aim for about 2.5 L (breastfeeding moms up to 3 L).",
+        blurb: "Total fluid per day against the 2.5 L target (the light bar behind). Pregnant mothers ~2.5 L (about 10 cups), breastfeeding moms up to 3 L.",
         footer: () => `${avg} L daily avg`,
       };
     }
@@ -233,11 +263,13 @@ const fmtTick = (catId: string, v: number) =>
 
 export function CategoryBarChart({ cat }: { cat: Category }) {
   const cfg = buildConfig(cat.id);
-  // Sleep is the only category with a series toggle (Jonas s9: baby + mom,
-  // shown separately, checkable). Everything else shows all series.
+  // Series check-toggle (Jonas s9 sleep baby/mom, s15 diaper by type). Categories
+  // without `toggle` always show every series.
   const [visible, setVisible] = useState<boolean[]>(cfg.series.map(() => true));
-  const isSleep = cat.id === "sleep";
-  const vis = isSleep ? visible : cfg.series.map(() => true);
+  const hasToggle = !!cfg.toggle;
+  const vis = hasToggle ? visible : cfg.series.map(() => true);
+  const blurbText = cfg.blurbFor ? cfg.blurbFor(vis) : cfg.blurb;
+  const ghost = cfg.ghost;
 
   const W = 320;
   const H = 156;
@@ -269,9 +301,9 @@ export function CategoryBarChart({ cat }: { cat: Category }) {
           <div className="text-xs text-neutral-500">Last 30 days</div>
         </div>
 
-        {/* Sleep series toggle */}
-        {isSleep && (
-          <div className="flex gap-2 mb-3">
+        {/* Series toggle (sleep baby/mom, diaper by type) */}
+        {hasToggle && (
+          <div className="flex flex-wrap gap-2 mb-3">
             {cfg.series.map((s, i) => (
               <button
                 key={s.label}
@@ -319,28 +351,62 @@ export function CategoryBarChart({ cat }: { cat: Category }) {
             </text>
           )}
 
-          {/* reference line (water 2.5 L) */}
-          {cfg.refLine && (
-            <>
-              <line
-                x1={padL}
-                y1={sy(cfg.refLine.value)}
-                x2={W - padR}
-                y2={sy(cfg.refLine.value)}
-                stroke="var(--color-cat-care)"
-                strokeWidth={1.2}
-                strokeDasharray="3 3"
-                opacity={0.7}
-              />
-              <text x={W - padR} y={sy(cfg.refLine.value) - 3} textAnchor="end" fontSize="7.5" fill="var(--color-cat-care)">
-                {cfg.refLine.label}
-              </text>
-            </>
+          {/* target ghost bars (water 2.5 L — Jonas "show in light behind") */}
+          {ghost &&
+            cfg.data.map((_, i) => {
+              const bw = Math.max(2, slot * 0.62);
+              const gx = padL + i * slot + (slot - bw) / 2;
+              const gyTop = sy(ghost.value);
+              return (
+                <rect
+                  key={`g${i}`}
+                  x={gx}
+                  y={gyTop}
+                  width={bw}
+                  height={Math.max(0, baseY - gyTop)}
+                  rx={1.5}
+                  fill="var(--color-cat-care)"
+                  opacity={0.16}
+                />
+              );
+            })}
+          {ghost && (
+            <text x={W - padR} y={sy(ghost.value) - 3} textAnchor="end" fontSize="7.5" fill="var(--color-cat-care)">
+              {ghost.label}
+            </text>
           )}
 
           {/* bars */}
           {cfg.data.map((day, i) => {
             const x0 = padL + i * slot;
+
+            // nursing: each session is its own segment, thin gap between them
+            // (Jonas "indicate sessions"). Colour by success, not series index.
+            if (cfg.sessions) {
+              const segs = cfg.sessions[i];
+              const bw = Math.max(2, slot * 0.62);
+              const x = x0 + (slot - bw) / 2;
+              let acc = 0;
+              return segs.map((sess, k) => {
+                const top = Math.min(cfg.yMax, acc + sess.min);
+                const y = sy(top);
+                const h = Math.max(0, sy(acc) - y);
+                acc += sess.min;
+                if (h <= 0.3) return null;
+                return (
+                  <rect
+                    key={`b${i}-${k}`}
+                    x={x}
+                    y={y}
+                    width={bw}
+                    height={Math.max(0.6, h - 0.7)}
+                    rx={1}
+                    fill={sess.ok ? cfg.series[0].color : cfg.series[1].color}
+                  />
+                );
+              });
+            }
+
             const visIdx = cfg.series.map((_, k) => k).filter((k) => vis[k]);
 
             if (cfg.layout === "group") {
@@ -413,7 +479,15 @@ export function CategoryBarChart({ cat }: { cat: Category }) {
 
         <p className="text-sm text-neutral-700 leading-relaxed mt-3">
           <span className="font-semibold text-neutral-900 tabular-nums">{cfg.footer(vis)}</span>
-          {cfg.blurb ? ` — ${cfg.blurb}` : ""}
+          {blurbText ? ` — ${blurbText}` : ""}
+          {cfg.articleSlug && (
+            <>
+              {" "}
+              <Link href={`/article/${cfg.articleSlug}`} className="font-medium text-[var(--color-coral)]">
+                Read more
+              </Link>
+            </>
+          )}
         </p>
       </div>
     </div>
