@@ -379,7 +379,9 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const [mode, setMode] = useState<"Manual" | "Live timer">(
     timer.timerFor("nursing:left") || timer.timerFor("nursing:right") ? "Live timer" : "Manual",
   );
-  const [outcome, setOutcome] = useState<"Success" | "Failure">("Success");
+  // Optional quality rating (Jonas floated "poor / good / better"); softer than
+  // a forced Success/Failure toggle, and unrated feeds simply carry no rating.
+  const [quality, setQuality] = useState<"Poor" | "Good" | "Great" | null>(null);
   const [comments, setComments] = useState("");
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
 
@@ -410,6 +412,12 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     pauseSide(side === "left" ? "right" : "left"); // one breast at a time
     if (!timer.timerFor(`nursing:${side}`)) timer.start(`nursing:${side}`);
   };
+  const resetTimers = () => {
+    if (timer.timerFor("nursing:left")) timer.stop("nursing:left");
+    if (timer.timerFor("nursing:right")) timer.stop("nursing:right");
+    setLeftAcc(0);
+    setRightAcc(0);
+  };
 
   const metaFor = (lSec: number, rSec: number) => {
     const lMin = Math.round(lSec / 60);
@@ -419,7 +427,7 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     if (lMin > 0) sides.push(`L ${lMin}m`);
     if (rMin > 0) sides.push(`R ${rMin}m`);
     const sideStr = sides.length ? ` (${sides.join(" · ")})` : "";
-    const base = `${total} min${sideStr}, ${outcome}`;
+    const base = quality ? `${total} min${sideStr}, ${quality}` : `${total} min${sideStr}`;
     const note = comments.trim();
     return { total, meta: note ? `${base} — ${note}` : base };
   };
@@ -436,6 +444,32 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     const { total, meta } = metaFor(leftMin * 60, rightMin * 60);
     save({ at: new Date().toISOString(), durationMin: total, meta, photo });
   };
+
+  const qualityField = (
+    <div>
+      <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+        How did it go? (optional)
+      </div>
+      <div className="flex gap-2">
+        {(["Poor", "Good", "Great"] as const).map((q) => (
+          <button
+            key={q}
+            type="button"
+            onClick={() => setQuality((cur) => (cur === q ? null : q))}
+            aria-pressed={quality === q}
+            className={`flex-1 py-2 rounded-full text-sm font-semibold border transition ${
+              quality === q
+                ? "text-white border-transparent"
+                : "text-neutral-600 border-neutral-200 bg-white active:bg-neutral-50"
+            }`}
+            style={quality === q ? { backgroundColor: accent } : undefined}
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   const commentsField = (
     <Field label="Comments (optional)">
@@ -492,10 +526,16 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               );
             })}
           </div>
-          <p className="text-xs text-neutral-500 text-center px-2">
-            One breast at a time — starting a side pauses the other. Keeps running if you navigate away.
-          </p>
-          <SegmentedToggle options={["Success", "Failure"] as const} value={outcome} onChange={setOutcome} />
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={resetTimers}
+              className="text-xs font-medium text-neutral-500 underline underline-offset-2 active:opacity-70"
+            >
+              Reset timers
+            </button>
+          </div>
+          {qualityField}
           {commentsField}
           <PhotoAttachField photo={photo} onChange={setPhoto} />
           <SaveBar cat={cat} editing={editing} onSave={saveLive} />
@@ -526,7 +566,7 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               />
             </Field>
           </div>
-          <SegmentedToggle options={["Success", "Failure"] as const} value={outcome} onChange={setOutcome} />
+          {qualityField}
           {commentsField}
           <PhotoAttachField photo={photo} onChange={setPhoto} />
           <SaveBar cat={cat} editing={editing} onSave={saveManual} />

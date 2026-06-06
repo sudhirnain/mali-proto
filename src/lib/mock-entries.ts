@@ -40,7 +40,7 @@ export const MOCK_ENTRIES: Entry[] = [
   // Slide 11 comment: "Add image. All entries should allow to add an image."
   // Photos sprinkled across care / measurement / event / memory categories so
   // the timeline visually demonstrates the rule — not just on pictures.
-  { id: "e1", categoryId: "nursing", at: iso(0), durationMin: 1, meta: "1 min (R), Success", photo: UNSPLASH("1503454537195-1dcabb73ffb9") },
+  { id: "e1", categoryId: "nursing", at: iso(0), durationMin: 1, meta: "1 min (R), Good", photo: UNSPLASH("1503454537195-1dcabb73ffb9") },
   { id: "e2", categoryId: "sleep", at: iso(2 * HOUR), durationMin: 80, meta: "1 h 20 min, night", photo: UNSPLASH("1519689680058-324335c77eba") },
   { id: "e3", categoryId: "diaper", at: iso(4 * HOUR), meta: "Mixed" },
   { id: "e4", categoryId: "nursing", at: iso(6 * HOUR), durationMin: 6, meta: "6 min (L)" },
@@ -50,13 +50,13 @@ export const MOCK_ENTRIES: Entry[] = [
   // Yesterday (May 18) — milestone + a typical day
   { id: "e7", categoryId: "milestone", at: iso(DAY + 4 * HOUR), meta: "Smiles spontaneously", milestoneId: "m-smile" },
   { id: "e8", categoryId: "sleep", at: iso(DAY + 7 * HOUR), durationMin: 95, meta: "1 h 35 min, daytime" },
-  { id: "e9", categoryId: "nursing", at: iso(DAY + 9 * HOUR), durationMin: 8, meta: "8 min (L 4m · R 4m), Success", photo: UNSPLASH("1547036967-23d11aacaee0") },
+  { id: "e9", categoryId: "nursing", at: iso(DAY + 9 * HOUR), durationMin: 8, meta: "8 min (L 4m · R 4m), Great", photo: UNSPLASH("1547036967-23d11aacaee0") },
   { id: "e10", categoryId: "diaper", at: iso(DAY + 11 * HOUR), meta: "Dirty" },
   { id: "e11", categoryId: "weight-baby", at: iso(DAY + 14 * HOUR), meta: "5.4 kg", photo: UNSPLASH("1502086223501-7ea6ecd79368") },
 
   // 2 days ago (May 17)
   { id: "e12", categoryId: "picture", at: iso(2 * DAY + 5 * HOUR), meta: "First giggle", photo: UNSPLASH("1519689680058-324335c77eba") },
-  { id: "e13", categoryId: "nursing", at: iso(2 * DAY + 8 * HOUR), durationMin: 5, meta: "5 min (R), Failure" },
+  { id: "e13", categoryId: "nursing", at: iso(2 * DAY + 8 * HOUR), durationMin: 5, meta: "5 min (R), Poor" },
   { id: "e14", categoryId: "sleep", at: iso(2 * DAY + 12 * HOUR), durationMin: 110, meta: "1 h 50 min, night" },
 
   // 3 days ago (May 16)

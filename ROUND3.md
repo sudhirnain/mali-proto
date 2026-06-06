@@ -95,9 +95,14 @@ The state-swapped clock already exists (`:846–857`, shipped in `abb5f0c`) but 
 ### 6. Kicks: 🎉 → **Mali baby** illustration — *slide 23*
 - `src/app/(prototype)/log/[category]/page.tsx:747` — `<div className="text-5xl">🎉</div>` in the "Great!" completion popup → swap for a Mali baby raster (`public/mali-art/…`) via `<Image>`, or an `<Illustration>` baby glyph. Brand-critical mascot, so prefer the production art if a fitting baby asset exists.
 
-### 7. Nursing: **SUCCESS / FAILURE** outcome — *slide 12 ("change the CTA to be SUCCESS and FAILURE")*
-Latching ≠ feeding; capture whether the session worked.
-- `TimerEntryForm` (`:170–357`), nursing branch. Add a `SegmentedToggle` **Success / Failure** (nursing only). Persist on the entry meta (drives the Phase-2 yellow=success / grey=failure bars).
+### 7. Nursing: outcome rating — *slide 12 ("change the CTA to be SUCCESS and FAILURE")*
+Latching ≠ feeding; capture how the session went. **Final (Sudhir Jun 6):** an
+**optional 3-level quality** — Poor / Good / Great (the nuance Jonas floated in
+the meeting), nothing pre-selected, tap to clear — instead of a forced
+Success/Failure toggle (softer for a postpartum app, and visually distinct from
+the Manual/Live mode toggle). Lives in `NursingForm`; persisted on the entry
+meta. The Phase-2 chart keeps Jonas's binary yellow=success / grey=failure
+encoding (Good/Great roll up to success, Poor to failure).
 
 ### 8. Nursing: **left & right** per-side timing — *slide 12 ("introduce left and right for the time"; reference = two timers)*
 Their reference (image22) shows two stopwatches, one per breast, each timed, with a Pause + side toggle. Today we have a single Left/Both/Right pill (`:281–288`).
