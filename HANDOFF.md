@@ -1,22 +1,32 @@
 # Handoff — Mali journal redesign
 
-Last updated: **2026-06-02** (end of round-2 session 4). The auto-memory (`~/.claude/projects/.../memory/MEMORY.md` → `project_round2_feedback`) is the living pickup doc — this file is the coarser summary.
+Last updated: **2026-06-06** (end of round-3). The auto-memory (`MEMORY.md` → `project_round3_feedback`) is the living pickup doc; **[ROUND3.md](ROUND3.md)** (repo root) is the round-3 spec; this file is the coarser summary.
 
-For project conventions read [CLAUDE.md](CLAUDE.md) first. For the screen-by-screen redesign spec read [SPEC.md](SPEC.md).
+For project conventions read [CLAUDE.md](CLAUDE.md) first. For the screen-by-screen spec read [SPEC.md](SPEC.md); for round-3 specifically read [ROUND3.md](ROUND3.md).
 
 ## TL;DR
 
-**Everything is shipped and deployed.** Prod (`mali-proto.vercel.app`, no auth wall) == local HEAD `86dbb90` (deploy `fjs5fpr0t`, verified). Working tree clean. **GitHub `origin/main` is ~31 commits behind** — deploys go via Vercel CLI not git, so the remote lags; a `git push` is the only housekeeping left (ask Sudhir before pushing).
+**Round-3 (Jonas Jun-5 review, deck slides 3–23) is built and committed on branch `round-3` (6 commits, tree clean) — but NOT pushed and NOT deployed.** Prod (`mali-proto.vercel.app`) still serves the round-2 build (`86dbb90`); `main` is at `d0008db`. **Deploying and pushing are Sudhir's call** (outward-facing) — he hasn't greenlit either.
 
-Round-2 deck (`mali-source/Mali 2026 New Journal.pptx`) slides 3–17 are **all closed** as of this session — including the last stragglers s10 (article reader) and s12 (chart image-mode). Jonas comments on the deck live; re-pull before reviewing and **view slide images, not just text** (drawn X-marks are feedback — text extraction can't see shapes).
+Round-3 = two phases, both ✅: **Phase 1** non-chart feedback; **Phase 2** the last-30-days chart system + phase-aware mom-weight + milestone axis fix — plus a nursing rework (dual L/R timer, optional Poor/Good/Great quality) and form-spacing standardization. Per-item detail + file:line anchors in [ROUND3.md](ROUND3.md).
 
-**The one big open is replying to Jonas** — draft in memory `project_email_reply_draft`, needs this session's wins folded in. Slides 18+ deliberately not started.
+**Biggest opens:** deploy round-3, push/merge to main, and (carried from round-2) reply to Jonas.
+
+**Reading the deck (Sudhir distrusts PDF — it drops comments):** comments live in `ppt/comments/comment*.xml` (`authorId`→`commentAuthors.xml`, `dt`, `pos`, `text`); read those + typed slide `<a:t>` text + `ppt/media/*.png` **directly**. Slide images carry drawn X-marks/strikethroughs that text can't.
 
 **Decisions locked:** A1 = keep teal parenting chrome (mom elements coral/pink); **production APK palette is the default** (froly `#f08180` / maliRed `#d14747` / paradiso `#2c746d` etc., extracted from `mali-2.9.4.xapk`); tiles color via `tileColor()` (group color, mom=maliRed/azalea), detail surfaces via domain `cat.color`; week-size = **produce, not animals** (week-32 = "kale leaf", site-verified — `sizeAnimal` is an unseeded hook awaiting Mali's art).
 
 Chrome MCP: tab management works now, but `navigate` is still denied at the extension's agent-permission layer — **headless Chrome (shoot ≥600px wide; narrower clips the right edge) is the QA path.**
 
-## What shipped in session 4 (✅, all deployed)
+## What shipped in round-3 (✅ committed on `round-3`, ⚠️ undeployed)
+
+- **Phase 1 — non-chart** (`f46d3c7`): `/log` Food+Activity→**Care**; drop **"My"** from mom labels; removed dead **`…`** ellipsis (2 headers); contractions **"Done"→"End session"** + removed on-screen stats + inline **"MM:SS since last contraction"**; Kicks 🎉→**Mali baby** art; water units **Gulp(50ml)/Small Glass(150ml)**, no "Other"; temperature **fever-warning** banner (≥38°C).
+- **Phase 2 — charts** (`a541771`): new `CategoryBarChart` last-30-days bars (sleep grouped Baby/Mom + toggle, nursing stacked success/fail, pumping/bottle ml, diaper stacked-by-type+legend, temperature ≥38 red, water +2.5 L line); new `MomWeightChart` (pregnancy ideal-gain band / parenting 12-month); milestone `SigmoidChart` axis fix; removed old 7-day-dot `PatternSection`. **Chart data is representative + deterministic (seeded), gated on populated mode — real numbers come from Mali's backend.**
+- **Nursing rework** — dedicated `NursingForm` (routed in `FormBody`; other timers keep `TimerEntryForm`): dual Left/Right timer (`ActiveTimer` keyed `nursing:left`/`nursing:right`); optional **Poor/Good/Great** quality (`43f2ee3`); (L)/(R) on entries + chip.
+- **Polish from review** — reset moved to **header ↺** via new `HeaderSlotContext` (`7f60067`); quality block uses standard `<Field>` (`dd3333a`); all entry forms standardized to `space-y-5` / 20px (`f01e14b`).
+- Verified: `tsc --noEmit` clean; every changed screen QA'd via headless Chrome + CDP-driven interaction.
+
+## What shipped in round-2 session 4 (✅, deployed)
 
 - **Contraction tracker rewrite** (`00aa8a8`) — was a hardcoded `00:45` headline + `running=true` on mount + state that died on nav (Jonas "still don't understand"). Now a persistent session (`ContractionSessionProvider`) + ActiveTimer chip, "like sleep." Hero clock is **state-swapped** (`abb5f0c`): running = current duration + frozen "after a X gap" line; idle = ticking "Since last contraction" + static last-duration. One ticking clock at a time.
 - **s10 article reader** (`4ab3dcd`) — `/article/[slug]` + 8 mock articles in `articles.ts`; every "Read more" wired (feed cards, category insight, milestone chart).
@@ -31,10 +41,11 @@ Chrome MCP: tab management works now, but `navigate` is still denied at the exte
 
 ## Open / next (🔴)
 
-1. **Reply to Jonas** — the live open. Draft in memory `project_email_reply_draft`; fold in contraction tracker, article reader, chart image-mode, kale-leaf produce answer, Adjust panel. Has Sudhir sent anything yet?
-2. **GitHub push** — `origin/main` ~31 behind. Ask before pushing.
-3. **s15 full icon-weight pass** — only the doctor icon was done; the rest of the icon-vs-illustration sweep is pending.
-4. **Watch-item:** `cat-growth #e0566b` still sits close to froly primary — eyeball growth tiles vs MOM tiles; nudge deeper if too similar. Sudhir's call.
+1. **Deploy round-3** — `vercel deploy --prod --yes` from the `round-3` working dir → updates `mali-proto.vercel.app` so Jonas can review. Sudhir's call (not done).
+2. **Push round-3 / merge to main** — local-only; `origin/main` ~31+ behind. Ask before pushing.
+3. **Reply to Jonas** — draft in memory `project_email_reply_draft`; fold in round-3 wins.
+4. **Offered, not done:** tighten `Field` label→input 8px→6px *globally* for stronger grouping (needs Sudhir's nod — app-wide); full app-wide spacing audit beyond the forms.
+5. **Carryover (round-2):** s15 full icon-weight pass; `cat-growth #e0566b` vs froly watch-item.
 
 ## Owned externally (📦)
 
