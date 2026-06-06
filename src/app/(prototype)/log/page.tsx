@@ -7,31 +7,15 @@ import {
   categoriesForPhase,
   getCategory,
   tileColor,
-  type CategoryGroup,
 } from "@/lib/categories";
 import { usePhase, type Phase } from "@/lib/phase";
 import { useEntries } from "@/lib/journal-store";
 import { Illustration } from "@/components/Illustration";
 
-// Memory-first ordering: leading the page with notes / photos / milestones /
-// quotes frames "Add to Journal" as moment-capture, with care / health / etc.
-// following. Pregnancy is at the end for parenting users (mostly empty) and
-// surfaces naturally for pregnancy users where Memories is still first.
-const GROUP_ORDER: CategoryGroup[] = [
-  "Memories",
-  "Food",
-  "Activity",
-  "Growth rate",
-  "Health",
-  "Wellbeing",
-  "Pregnancy",
-];
-
-// Display titles for group headers where the section name differs from the
-// internal CategoryGroup key (Jonas s13: "Call it: Mom's wellbeing").
-function groupLabel(group: CategoryGroup): string {
-  return group === "Wellbeing" ? "Mom's wellbeing" : group;
-}
+// Section order + labels for the composer live inline in the render (see
+// `displaySections` below): Memory-first framing, and Food + Activity are
+// merged into one "Care" section (Jonas round-3 s6 "Combine in Care like in
+// Memories"), matching how the Moments tab already groups them.
 
 /**
  * Phase-appropriate fallback pool for the "Right now" picks.
@@ -138,14 +122,21 @@ export default function AddEventPage() {
           </div>
         </section>
 
-        {/* Full grouped list — Memories first frames the page as moment-first */}
-        {GROUP_ORDER.map((group) => {
-          const cats = groups[group];
+        {/* Full grouped list — Memories first; Food + Activity merged into one
+         *  "Care" section (Jonas round-3 s6), matching the Moments tab. */}
+        {([
+          ["Memories", groups["Memories"]],
+          ["Care", [...groups["Food"], ...groups["Activity"]]],
+          ["Growth rate", groups["Growth rate"]],
+          ["Health", groups["Health"]],
+          ["Mom's wellbeing", groups["Wellbeing"]],
+          ["Pregnancy", groups["Pregnancy"]],
+        ] as const).map(([label, cats]) => {
           if (!cats || cats.length === 0) return null;
           return (
-            <section key={group} className="space-y-3">
+            <section key={label} className="space-y-3">
               <h2 className="text-sm font-semibold text-neutral-900 tracking-tight">
-                {groupLabel(group)}
+                {label}
               </h2>
               <div className="grid grid-cols-4 gap-3">
                 {cats.map((c) => (

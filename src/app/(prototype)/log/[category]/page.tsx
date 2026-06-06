@@ -3,10 +3,12 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getCategory, type Category } from "@/lib/categories";
 import { Illustration } from "@/components/Illustration";
+import { milestoneArtOrFallback } from "@/lib/milestone-art";
 import { formatTime } from "@/lib/format";
-import { MOCK_KICK_SESSIONS, MOCK_CONTRACTIONS, TODAY_DATE, type Entry } from "@/lib/mock-entries";
+import { MOCK_KICK_SESSIONS, TODAY_DATE, type Entry } from "@/lib/mock-entries";
 import { useJournalStore } from "@/lib/journal-store";
 import { useActiveTimer } from "@/lib/active-timer";
 import { useContractionSession } from "@/lib/contraction-session";
@@ -55,13 +57,8 @@ export default function LogEntryPage() {
           </svg>
         </button>
         <h1 className="text-lg font-semibold text-neutral-900">{editing ? `Edit ${cat.label.toLowerCase()}` : cat.label}</h1>
-        <button aria-label="More" className="w-9 h-9 flex items-center justify-center text-neutral-700">
-          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-            <circle cx="5" cy="12" r="1.5" />
-            <circle cx="12" cy="12" r="1.5" />
-            <circle cx="19" cy="12" r="1.5" />
-          </svg>
-        </button>
+        {/* Dead 3-dot menu removed (Jonas round-3 s12 "remove here and everywhere"). */}
+        <span className="w-9" aria-hidden />
       </header>
 
       {/* White card content area */}
@@ -92,7 +89,13 @@ function CategoryIconBadge({ cat }: { cat: Category }) {
 function FormBody({ cat, editing }: { cat: Category; editing?: Entry }) {
   switch (cat.formKind) {
     case "timer":
-      return <TimerEntryForm cat={cat} editing={editing} />;
+      // Nursing gets its own dual left/right timer + Success/Failure outcome
+      // (Jonas round-3 s12); other timer categories share TimerEntryForm.
+      return cat.id === "nursing" ? (
+        <NursingForm cat={cat} editing={editing} />
+      ) : (
+        <TimerEntryForm cat={cat} editing={editing} />
+      );
     case "measurement":
       return <MeasurementForm cat={cat} editing={editing} />;
     case "event":
@@ -350,6 +353,183 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               });
             }}
           />
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Nursing form — dual left/right timing (Jonas round-3 s12 "introduce left and
+ * right for the time"; reference = two stopwatches) + a Success/Failure outcome
+ * ("change the CTA to be SUCCESS and FAILURE"). Replaces TimerEntryForm for
+ * nursing only; pumping keeps the single timer.
+ *
+ * Live: two stopwatches, one breast at a time (starting one pauses the other),
+ * each accumulating across pauses; the running side survives navigation via
+ * ActiveTimer keyed `nursing:left` / `nursing:right`. Manual: per-side minute
+ * inputs for retro logging. Either way the entry records per-side time +
+ * outcome, e.g. "12 min (L 7m · R 5m), Success".
+ */
+function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
+  const save = useSaveEntry(cat, editing);
+  const timer = useActiveTimer();
+  const accent = `var(--color-${cat.color})`;
+
+  const [mode, setMode] = useState<"Manual" | "Live timer">(
+    timer.timerFor("nursing:left") || timer.timerFor("nursing:right") ? "Live timer" : "Manual",
+  );
+  const [outcome, setOutcome] = useState<"Success" | "Failure">("Success");
+  const [comments, setComments] = useState("");
+  const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
+
+  // Manual: minutes per side.
+  const [leftMin, setLeftMin] = useState(0);
+  const [rightMin, setRightMin] = useState(0);
+
+  // Live: seconds banked at each pause, plus whatever the running side has
+  // ticked since it last started.
+  const [leftAcc, setLeftAcc] = useState(0);
+  const [rightAcc, setRightAcc] = useState(0);
+  const leftRunning = !!timer.timerFor("nursing:left");
+  const rightRunning = !!timer.timerFor("nursing:right");
+  const liveSec = (side: "left" | "right") => {
+    const acc = side === "left" ? leftAcc : rightAcc;
+    const running = side === "left" ? leftRunning : rightRunning;
+    return acc + (running ? timer.elapsedSec(`nursing:${side}`) : 0);
+  };
+
+  const pauseSide = (side: "left" | "right") => {
+    if (!timer.timerFor(`nursing:${side}`)) return;
+    const sec = timer.elapsedSec(`nursing:${side}`);
+    timer.stop(`nursing:${side}`);
+    if (side === "left") setLeftAcc((s) => s + sec);
+    else setRightAcc((s) => s + sec);
+  };
+  const startSide = (side: "left" | "right") => {
+    pauseSide(side === "left" ? "right" : "left"); // one breast at a time
+    if (!timer.timerFor(`nursing:${side}`)) timer.start(`nursing:${side}`);
+  };
+
+  const metaFor = (lSec: number, rSec: number) => {
+    const lMin = Math.round(lSec / 60);
+    const rMin = Math.round(rSec / 60);
+    const total = Math.max(1, lMin + rMin);
+    const sides: string[] = [];
+    if (lMin > 0) sides.push(`L ${lMin}m`);
+    if (rMin > 0) sides.push(`R ${rMin}m`);
+    const sideStr = sides.length ? ` (${sides.join(" · ")})` : "";
+    const base = `${total} min${sideStr}, ${outcome}`;
+    const note = comments.trim();
+    return { total, meta: note ? `${base} — ${note}` : base };
+  };
+
+  const saveLive = () => {
+    const lSec = liveSec("left");
+    const rSec = liveSec("right");
+    if (leftRunning) timer.stop("nursing:left");
+    if (rightRunning) timer.stop("nursing:right");
+    const { total, meta } = metaFor(lSec, rSec);
+    save({ at: new Date().toISOString(), durationMin: total, meta, photo });
+  };
+  const saveManual = () => {
+    const { total, meta } = metaFor(leftMin * 60, rightMin * 60);
+    save({ at: new Date().toISOString(), durationMin: total, meta, photo });
+  };
+
+  const commentsField = (
+    <Field label="Comments (optional)">
+      <textarea
+        rows={2}
+        value={comments}
+        onChange={(e) => setComments(e.target.value)}
+        placeholder="Anything you want to remember?"
+        className={`${INPUT_CLASS} text-sm resize-none`}
+      />
+    </Field>
+  );
+
+  return (
+    <div className="space-y-4">
+      <SegmentedToggle
+        options={["Manual", "Live timer"] as const}
+        value={mode}
+        onChange={(m) => {
+          if (m === "Manual") {
+            pauseSide("left");
+            pauseSide("right");
+          }
+          setMode(m);
+        }}
+      />
+
+      {mode === "Live timer" ? (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            {(["left", "right"] as const).map((side) => {
+              const running = side === "left" ? leftRunning : rightRunning;
+              const sec = liveSec(side);
+              return (
+                <div key={side} className="rounded-2xl border border-neutral-200 p-4 text-center">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 mb-1">
+                    {side === "left" ? "Left" : "Right"}
+                  </div>
+                  <div
+                    className="serif text-3xl font-semibold tabular-nums"
+                    style={{ color: running ? accent : "var(--color-neutral-400)" }}
+                  >
+                    {formatTimerLive(sec)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => (running ? pauseSide(side) : startSide(side))}
+                    className="mt-3 w-full py-2 rounded-full text-sm font-semibold text-white active:scale-[0.98] transition"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {running ? "Pause" : sec > 0 ? "Resume" : "Start"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-neutral-500 text-center px-2">
+            One breast at a time — starting a side pauses the other. Keeps running if you navigate away.
+          </p>
+          <SegmentedToggle options={["Success", "Failure"] as const} value={outcome} onChange={setOutcome} />
+          {commentsField}
+          <PhotoAttachField photo={photo} onChange={setPhoto} />
+          <SaveBar cat={cat} editing={editing} onSave={saveLive} />
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Left (min)">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                value={leftMin}
+                onChange={(e) => setLeftMin(Math.max(0, Number(e.target.value) || 0))}
+                className={`${INPUT_CLASS} text-base tabular-nums`}
+              />
+            </Field>
+            <Field label="Right (min)">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                value={rightMin}
+                onChange={(e) => setRightMin(Math.max(0, Number(e.target.value) || 0))}
+                className={`${INPUT_CLASS} text-base tabular-nums`}
+              />
+            </Field>
+          </div>
+          <SegmentedToggle options={["Success", "Failure"] as const} value={outcome} onChange={setOutcome} />
+          {commentsField}
+          <PhotoAttachField photo={photo} onChange={setPhoto} />
+          <SaveBar cat={cat} editing={editing} onSave={saveManual} />
         </>
       )}
     </div>
@@ -744,7 +924,16 @@ function KickCelebration({
           </svg>
         </button>
 
-        <div className="text-5xl mb-3" aria-hidden>🎉</div>
+        {/* Mali baby line-art instead of an emoji (Jonas round-3 s23 "change to Mali baby"). */}
+        <div className="flex justify-center mb-2" aria-hidden>
+          <Image
+            src={milestoneArtOrFallback("m-laugh")}
+            alt=""
+            width={84}
+            height={84}
+            className="object-contain"
+          />
+        </div>
         <div className="serif text-2xl font-semibold text-neutral-900 mb-1">Great!</div>
         <p className="text-sm text-neutral-700 leading-relaxed">
           You felt{" "}
@@ -798,12 +987,9 @@ function ContractionsForm({ cat }: { cat: Category }) {
   const currentSec = running ? Math.max(0, Math.floor((now - session.currentStart!) / 1000)) : 0;
   const sinceLastSec = lastEnd != null ? Math.max(0, Math.floor((now - lastEnd) / 1000)) : null;
 
-  const avgDurSec = count > 0
-    ? Math.round(session.events.reduce((s, e) => s + (e.end - e.start), 0) / count / 1000)
-    : null;
-  const gapsMs = session.events.slice(1).map((e, i) => e.start - session.events[i].end);
-  const avgGapLabel = gapsMs.length > 0 ? formatGap(gapsMs.reduce((a, b) => a + b, 0) / gapsMs.length) : null;
-
+  // On-screen session stats (count/avg/today) removed per Jonas round-3 s22
+  // ("Remove" — X over both lines). Stats are still computed in sessionMeta and
+  // saved with the entry; they just don't clutter the live tracker.
   const sessionMeta = (events: { start: number; end: number }[]) => {
     const n = events.length;
     const avg = Math.round(events.reduce((s, e) => s + (e.end - e.start), 0) / n / 1000);
@@ -845,10 +1031,13 @@ function ContractionsForm({ cat }: { cat: Category }) {
         </div>
       ) : sinceLastSec != null ? (
         <div className="text-center">
-          <div className="serif text-4xl font-semibold text-neutral-900 tabular-nums">
-            {formatTimerLive(sinceLastSec)}
+          {/* Read as one phrase — "00:08 since last contraction" (Jonas round-3
+           *  s4). The value stays prominent; the label is inline, not a separate
+           *  stacked caption. */}
+          <div className="serif text-4xl font-semibold text-neutral-900 leading-tight text-balance">
+            <span className="tabular-nums">{formatTimerLive(sinceLastSec)}</span>{" "}
+            <span className="text-lg font-medium text-neutral-500">since last contraction</span>
           </div>
-          <div className="text-xs text-neutral-500 mt-1">Since last contraction</div>
           {lastDurSec != null && (
             <div className="text-[11px] text-neutral-400 mt-1.5 tabular-nums">
               Last contraction · {lastDurSec}s
@@ -882,16 +1071,6 @@ function ContractionsForm({ cat }: { cat: Category }) {
         {running ? "Stop contraction" : count > 0 ? "Start next" : "Start contraction"}
       </button>
 
-      {count > 0 && (
-        <div className="text-xs text-neutral-600 text-center tabular-nums">
-          {count} this session · avg {avgDurSec}s{avgGapLabel ? ` · ${avgGapLabel} apart` : ""}
-        </div>
-      )}
-
-      <div className="text-xs text-neutral-500 text-center">
-        {MOCK_CONTRACTIONS.length + count} contractions logged today
-      </div>
-
       {/* Slide 18 comment: "Note that this is relevant. Pls show somewhere." —
        *  surface the true-contractions explainer as a collapsible panel. */}
       <button
@@ -914,6 +1093,7 @@ function ContractionsForm({ cat }: { cat: Category }) {
       )}
 
       <DoneBar
+        label="End session"
         onDone={() => {
           // Done mid-contraction counts the in-flight one as ending now.
           const finalEvents = running
@@ -1117,14 +1297,14 @@ function SaveBar({ cat, editing, onSave }: { cat: Category; editing?: Entry; onS
  * anything was logged) and navigating away — useSaveEntry already handles
  * router.back() after addEntry, so callers control that flow.
  */
-function DoneBar({ onDone }: { onDone: () => void }) {
+function DoneBar({ onDone, label = "Done" }: { onDone: () => void; label?: string }) {
   return (
     <button
       type="button"
       onClick={onDone}
       className="w-full py-3 rounded-full bg-white border-2 border-neutral-200 text-neutral-700 font-semibold text-base active:scale-[0.98] transition"
     >
-      Done
+      {label}
     </button>
   );
 }
@@ -1159,7 +1339,8 @@ function presetsFor(id: string): string[] {
     case "symptoms":
       return ["Nausea", "Headache", "Swelling", "Heartburn", "Fatigue", "Back pain", "Cramping", OTHER_PRESET];
     case "hydration":
-      return ["Cup (250ml)", "Glass (350ml)", "Bottle (500ml)", "Large (1L)", OTHER_PRESET];
+      // Jonas round-3 s17: add smaller units (Gulp / Small Glass), remove "Other".
+      return ["Gulp (50ml)", "Small Glass (150ml)", "Cup (250ml)", "Glass (350ml)", "Bottle (500ml)", "Large (1L)"];
 
     default:
       return [];

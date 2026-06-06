@@ -60,11 +60,15 @@ export const CATEGORIES: Category[] = [
 
   // Wellbeing — mom-experience tracks; present in BOTH phases (mom keeps
   // tracking after birth per Jonas's slide 13 + slide 29 comments).
-  { id: "weight-mom", label: "My Weight", group: "Wellbeing", color: "cat-growth", formKind: "measurement", phases: ["pregnancy", "parenting"], hasGraph: true, iconName: "scale", forMom: true },
-  { id: "mom-mood", label: "My Mood", group: "Wellbeing", color: "cat-mood", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "mood-fine", forMom: true },
-  { id: "symptoms", label: "My Symptoms", group: "Wellbeing", color: "cat-health", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "heart-pulse", forMom: true },
-  { id: "hydration", label: "My Water", group: "Wellbeing", color: "cat-care", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "bath", forMom: true },
-  { id: "sleep-mom", label: "My Sleep", group: "Wellbeing", color: "cat-sleep", formKind: "timer", phases: ["pregnancy", "parenting"], iconName: "crib", forMom: true },
+  // "My" prefix dropped (Jonas round-3 s6 "Take out My") — the pink MOM
+  // treatment + the "Mom's wellbeing" section already signal these are mom's,
+  // so "My Weight"/etc. just read long. Labels now collide with the baby
+  // Weight/Mood/Sleep by design; color + section disambiguate.
+  { id: "weight-mom", label: "Weight", group: "Wellbeing", color: "cat-growth", formKind: "measurement", phases: ["pregnancy", "parenting"], hasGraph: true, iconName: "scale", forMom: true },
+  { id: "mom-mood", label: "Mood", group: "Wellbeing", color: "cat-mood", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "mood-fine", forMom: true },
+  { id: "symptoms", label: "Symptoms", group: "Wellbeing", color: "cat-health", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "heart-pulse", forMom: true },
+  { id: "hydration", label: "Water", group: "Wellbeing", color: "cat-care", formKind: "event", phases: ["pregnancy", "parenting"], iconName: "bath", forMom: true },
+  { id: "sleep-mom", label: "Sleep", group: "Wellbeing", color: "cat-sleep", formKind: "timer", phases: ["pregnancy", "parenting"], iconName: "crib", forMom: true },
 
   // Pregnancy — baby-emergent tracks, pregnancy-only.
   { id: "kicks", label: "Kicks", group: "Pregnancy", color: "cat-kicks", formKind: "kicks", phases: ["pregnancy"], hasGraph: true, iconName: "kick" },

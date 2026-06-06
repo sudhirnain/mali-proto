@@ -31,8 +31,12 @@ export function ActiveTimerChip() {
 
 function TimerPill({ categoryId }: { categoryId: string }) {
   const { elapsedSec } = useActiveTimer();
-  const cat = getCategory(categoryId);
+  // Nursing runs per-side sub-timers keyed `nursing:left` / `nursing:right`
+  // (round-3 s12 dual timer) — resolve the base category and tag the side.
+  const [baseId, side] = categoryId.split(":");
+  const cat = getCategory(baseId);
   if (!cat) return null;
+  const sideTag = side === "left" ? " (L)" : side === "right" ? " (R)" : "";
 
   const sec = elapsedSec(categoryId);
   const mm = Math.floor(sec / 60).toString().padStart(2, "0");
@@ -40,10 +44,10 @@ function TimerPill({ categoryId }: { categoryId: string }) {
 
   return (
     <Link
-      href={`/log/${categoryId}`}
+      href={`/log/${baseId}`}
       className="flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-full shadow-lg active:scale-[0.98] transition"
       style={{ backgroundColor: `var(--color-${cat.color})` }}
-      aria-label={`${cat.label} running, tap to manage`}
+      aria-label={`${cat.label}${sideTag} running, tap to manage`}
     >
       <span className="relative w-7 h-7 rounded-full bg-white/25 flex items-center justify-center text-white">
         <Illustration name={cat.iconName} className="w-4 h-4" />
@@ -52,7 +56,7 @@ function TimerPill({ categoryId }: { categoryId: string }) {
           aria-hidden
         />
       </span>
-      <span className="text-white text-sm font-semibold leading-tight">{cat.label}</span>
+      <span className="text-white text-sm font-semibold leading-tight">{cat.label}{sideTag}</span>
       <span className="text-white/90 text-sm font-semibold tabular-nums leading-tight">
         {mm}:{ss}
       </span>

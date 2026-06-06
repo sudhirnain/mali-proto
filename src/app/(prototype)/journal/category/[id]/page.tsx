@@ -124,6 +124,21 @@ export default function CategoryDetailPage() {
         </div>
       </header>
 
+      {/* Fever warning (Jonas round-3 s16): for newborns, 38°C+ is an emergency.
+       *  Static, always shown on Temperature — independent of the chart. */}
+      {cat.id === "temperature" && (
+        <div className="mx-4 mt-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex gap-2.5">
+          <svg viewBox="0 0 24 24" className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <p className="text-[13px] text-red-700 leading-relaxed">
+            For newborns, a temperature of <span className="font-semibold">38&thinsp;°C or higher</span> is a medical emergency — see a doctor immediately.
+          </p>
+        </div>
+      )}
+
       {cat.hasGraph && entries.length > 0 && <ChartSection cat={cat} />}
       {PATTERN_CATEGORIES.has(cat.id) && entries.length > 0 && <PatternSection cat={cat} entries={entries} />}
 

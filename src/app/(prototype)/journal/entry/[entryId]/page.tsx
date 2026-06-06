@@ -70,16 +70,8 @@ export default function EntryDetailPage() {
             </svg>
           </button>
           <h1 className="text-lg font-semibold text-neutral-900">{cat.label}</h1>
-          <button
-            aria-label="More"
-            className="w-9 h-9 flex items-center justify-center text-neutral-700"
-          >
-            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-              <circle cx="5" cy="12" r="1.5" />
-              <circle cx="12" cy="12" r="1.5" />
-              <circle cx="19" cy="12" r="1.5" />
-            </svg>
-          </button>
+          {/* Dead 3-dot menu removed (Jonas round-3 s12 "remove here and everywhere"). */}
+          <span className="w-9" aria-hidden />
         </div>
       </header>
 
