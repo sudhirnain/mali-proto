@@ -53,8 +53,9 @@ type ChartConfig = {
   series: Series[];
   layout: "stack" | "group" | "single";
   data: number[][]; // [day][seriesIndex]
-  /** Per-day session segments, each coloured by success — nursing "indicate sessions". */
-  sessions?: { min: number; ok: boolean }[][];
+  /** Per-day session segments, each coloured by quality — nursing "indicate
+   *  sessions". `q` indexes into `series` (0 Poor, 1 Okay, 2 Good). */
+  sessions?: { min: number; q: number }[][];
   /** Faint target bar drawn behind each day's bar — water 2.5 L "show in light behind". */
   ghost?: { value: number; label: string };
   threshold?: { at: number; color: string }; // single layout: recolor bars >= at
@@ -72,6 +73,9 @@ type ChartConfig = {
 
 function buildConfig(catId: string): ChartConfig {
   switch (catId) {
+    // Mom's Sleep shows the same baby+mom comparison (Jonas Jun-8 mail "show it
+    // also in Mom's Sleep") — identical config, just reached from sleep-mom.
+    case "sleep-mom":
     case "sleep": {
       const baby = gen("sleepBaby", (r) => 11 + r * 5); // 11–16 h
       const mom = gen("sleepMom", (r) => 5 + r * 4); // 5–9 h
@@ -110,13 +114,15 @@ function buildConfig(catId: string): ChartConfig {
     }
     case "nursing": {
       // Each day is a stack of individual sessions, each its own segment coloured
-      // by success — Jonas s10–12 "Indicate sessions" (comment6 + meeting "you
-      // have one, two… six sessions… show them with the success").
+      // by QUALITY — Jonas s10–12 "Indicate sessions" + Jun-8 mail "show all 3
+      // states… grey (poor) → light green (okay) → standard green (good)".
+      // q indexes straight into `series` below: 0 Poor, 1 Okay, 2 Good.
+      const qual = (r: number) => (r < 0.15 ? 0 : r < 0.4 ? 1 : 2); // ~60% good / 25% okay / 15% poor
       const sessions = Array.from({ length: DAYS }, (_, d) => {
         const n = 4 + Math.round(seeded("nurseN", d) * 7); // 4–11 sessions/day
         return Array.from({ length: n }, (_, s) => ({
           min: 10 + Math.round(seeded(`nurseMin${d}`, s) * 35), // 10–45 min/session
-          ok: seeded(`nurseOk${d}`, s) > 0.28, // ~72% go well
+          q: qual(seeded(`nurseQual${d}`, s)),
         }));
       });
       const totals = sessions.map((day) => day.reduce((a, b) => a + b.min, 0));
@@ -128,14 +134,15 @@ function buildConfig(catId: string): ChartConfig {
         yMax: 500,
         yTicks: [0, 250, 500],
         series: [
-          { label: "Successful", color: "#f5b800" },
-          { label: "Unsuccessful", color: "#c9ccd1" },
+          { label: "Poor", color: "#c7cbd1" }, // grey
+          { label: "Okay", color: "#9ad6ab" }, // light green
+          { label: "Good", color: "#3fa564" }, // standard green
         ],
         layout: "stack",
         data: totals.map((t) => [t]),
         sessions,
         showLegend: true,
-        blurb: "Each block is one nursing session — yellow = successful, grey = unsuccessful. Minutes per day.",
+        blurb: "Each block is one nursing session — grey = poor, light green = okay, green = good. Minutes per day.",
         footer: () => `${avg} min daily avg`,
       };
     }
@@ -401,7 +408,7 @@ export function CategoryBarChart({ cat }: { cat: Category }) {
                     width={bw}
                     height={Math.max(0.6, h - 0.7)}
                     rx={1}
-                    fill={sess.ok ? cfg.series[0].color : cfg.series[1].color}
+                    fill={cfg.series[sess.q].color}
                   />
                 );
               });

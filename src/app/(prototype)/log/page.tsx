@@ -7,6 +7,7 @@ import {
   categoriesForPhase,
   getCategory,
   tileColor,
+  type Category,
 } from "@/lib/categories";
 import { usePhase, type Phase } from "@/lib/phase";
 import { useEntries } from "@/lib/journal-store";
@@ -36,15 +37,19 @@ export default function AddEventPage() {
   const entries = useEntries();
   const groups = categoriesByGroup(phase);
 
-  // Jonas 2026-06-02: during pregnancy, preview the baby-tracking categories that
-  // unlock after birth — shown below the menu, greyed + non-clickable so users
-  // know it's coming ("blend it out").
-  const comingSoon =
+  // During pregnancy, preview the baby-tracking categories that unlock after
+  // birth — greyed + non-clickable so users know it's coming ("blend it out",
+  // Jonas 2026-06-02). Jonas 2026-06-08: list the *health* ones inline under
+  // Health (so it's clear more health tracking is coming, e.g. vaccinations);
+  // everything else stays in one preview block at the bottom.
+  const comingSoonAll =
     phase === "pregnancy"
       ? categoriesForPhase("parenting").filter(
           (c) => !c.phases.includes("pregnancy") && c.group !== "Memories",
         )
       : [];
+  const comingSoonHealth = comingSoonAll.filter((c) => c.group === "Health");
+  const comingSoonOther = comingSoonAll.filter((c) => c.group !== "Health");
 
   // "Right now" = the 4 categories this phase logs the most. Count entries per
   // category (restricted to this phase's catalog), rank by frequency, then
@@ -124,15 +129,17 @@ export default function AddEventPage() {
 
         {/* Full grouped list — Memories first; Food + Activity merged into one
          *  "Care" section (Jonas round-3 s6), matching the Moments tab. */}
-        {([
-          ["Memories", groups["Memories"]],
-          ["Care", [...groups["Food"], ...groups["Activity"]]],
-          ["Growth rate", groups["Growth rate"]],
-          ["Health", groups["Health"]],
-          ["Mom's wellbeing", groups["Wellbeing"]],
-          ["Pregnancy", groups["Pregnancy"]],
-        ] as const).map(([label, cats]) => {
-          if (!cats || cats.length === 0) return null;
+        {(
+          [
+            { label: "Memories", cats: groups["Memories"] },
+            { label: "Care", cats: [...groups["Food"], ...groups["Activity"]] },
+            { label: "Growth rate", cats: groups["Growth rate"] },
+            { label: "Health", cats: groups["Health"], soon: comingSoonHealth },
+            { label: "Mom's wellbeing", cats: groups["Wellbeing"] },
+            { label: "Pregnancy", cats: groups["Pregnancy"] },
+          ] as { label: string; cats: Category[]; soon?: Category[] }[]
+        ).map(({ label, cats, soon = [] }) => {
+          if ((!cats || cats.length === 0) && soon.length === 0) return null;
           return (
             <section key={label} className="space-y-3">
               <h2 className="text-sm font-semibold text-neutral-900 tracking-tight">
@@ -169,12 +176,34 @@ export default function AddEventPage() {
                     </div>
                   </Link>
                 ))}
+                {/* Trackers that unlock after birth — greyed in place so the
+                 *  section's full future scope is visible (Jonas 2026-06-08). */}
+                {soon.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex flex-col items-center gap-1.5 opacity-50 grayscale pointer-events-none select-none"
+                    aria-hidden
+                  >
+                    <div
+                      className="w-14 h-14 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: `var(--color-${tileColor(c)}-soft)`,
+                        color: `var(--color-${tileColor(c)})`,
+                      }}
+                    >
+                      <Illustration name={c.iconName} className="w-8 h-8" />
+                    </div>
+                    <div className="text-xs font-medium text-neutral-500 text-center leading-tight">
+                      {c.label}
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
           );
         })}
 
-        {comingSoon.length > 0 && (
+        {comingSoonOther.length > 0 && (
           <section className="space-y-3" aria-hidden>
             <div>
               <h2 className="text-sm font-semibold text-neutral-900 tracking-tight">
@@ -185,7 +214,7 @@ export default function AddEventPage() {
               </p>
             </div>
             <div className="grid grid-cols-4 gap-3 opacity-50 grayscale pointer-events-none select-none">
-              {comingSoon.map((c) => (
+              {comingSoonOther.map((c) => (
                 <div key={c.id} className="flex flex-col items-center gap-1.5">
                   <div
                     className="w-14 h-14 rounded-full flex items-center justify-center"

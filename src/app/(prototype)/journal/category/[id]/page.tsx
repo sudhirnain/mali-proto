@@ -26,6 +26,7 @@ import Image from "next/image";
 // hydration which previously had none.
 const BAR_CHART_CATEGORIES = new Set([
   "sleep",
+  "sleep-mom",
   "nursing",
   "diaper",
   "bottle",

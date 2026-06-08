@@ -389,9 +389,10 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const [mode, setMode] = useState<"Manual" | "Live timer">(
     timer.timerFor("nursing:left") || timer.timerFor("nursing:right") ? "Live timer" : "Manual",
   );
-  // Optional quality rating (Jonas floated "poor / good / better"); softer than
-  // a forced Success/Failure toggle, and unrated feeds simply carry no rating.
-  const [quality, setQuality] = useState<"Poor" | "Good" | "Great" | null>(null);
+  // Quality rating (Jonas Jun-8 mail "pre-select 'good' quality… show all 3
+  // states"): Poor / Okay / Good, defaulting to Good so most sessions log a
+  // quality without a tap and the 30-day chart always carries all three states.
+  const [quality, setQuality] = useState<"Poor" | "Okay" | "Good">("Good");
   const [comments, setComments] = useState("");
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
 
@@ -463,7 +464,7 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     if (lMin > 0) sides.push(`L ${lMin}m`);
     if (rMin > 0) sides.push(`R ${rMin}m`);
     const sideStr = sides.length ? ` (${sides.join(" · ")})` : "";
-    const base = quality ? `${total} min${sideStr}, ${quality}` : `${total} min${sideStr}`;
+    const base = `${total} min${sideStr}, ${quality}`;
     const note = comments.trim();
     return { total, meta: note ? `${base} — ${note}` : base };
   };
@@ -485,13 +486,13 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   // Comments / Photo exactly (don't hand-roll the label spacing — that was the
   // 6px-vs-8px drift).
   const qualityField = (
-    <Field label="How did it go? (optional)">
+    <Field label="How did it go?">
       <div className="flex gap-2">
-        {(["Poor", "Good", "Great"] as const).map((q) => (
+        {(["Poor", "Okay", "Good"] as const).map((q) => (
           <button
             key={q}
             type="button"
-            onClick={() => setQuality((cur) => (cur === q ? null : q))}
+            onClick={() => setQuality(q)}
             aria-pressed={quality === q}
             className={`flex-1 py-2 rounded-full text-sm font-semibold border transition ${
               quality === q
