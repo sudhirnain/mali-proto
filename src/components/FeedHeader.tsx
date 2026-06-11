@@ -54,12 +54,16 @@ export function FeedHeader() {
   // Cold flips via search param (no remount) — drop any cycled override so
   // the first-day persona returns to the no-photo flat tint.
   useEffect(() => setPhotoIdx(null), [cold]);
-  const familyPhoto = photoIdx === null ? mom.familyPhoto : FAMILY_PHOTOS[photoIdx];
+  // The cycle includes a "no photo" stop after the last pool image so
+  // reviewers can reach the flat-tint state (where the add-photo doodle
+  // lives) without flipping to Empty mode.
+  const familyPhoto =
+    photoIdx === null ? mom.familyPhoto : (FAMILY_PHOTOS[photoIdx] ?? null);
   const cycleFamilyPhoto = () =>
     setPhotoIdx(
       (i) =>
         ((i === null ? FAMILY_PHOTOS.indexOf(mom.familyPhoto ?? "") : i) + 1) %
-        FAMILY_PHOTOS.length,
+        (FAMILY_PHOTOS.length + 1),
     );
   // Slide 8 — 3-state scroll transition. scrollY drives two stacked pills
   // that cross-fade based on position:
@@ -99,9 +103,11 @@ export function FeedHeader() {
   // pink/green gradient"). No full-photo veil — it dulled the picture
   // (Sudhir). Both branches are full literal class strings so Tailwind's
   // scanner sees them (string-built class names get tree-shaken).
+  // Jonas Jun-11 follow-up: "fading of colors could be a little smaller, so
+  // fading faster to clear" — melt starts at 82% (was 72%).
   const scrimClass = isPreg
-    ? "absolute inset-0 bg-gradient-to-b from-transparent from-72% to-[var(--color-primary-bright)] to-100%"
-    : "absolute inset-0 bg-gradient-to-b from-transparent from-72% to-[var(--color-primary-soft)] to-100%";
+    ? "absolute inset-0 bg-gradient-to-b from-transparent from-82% to-[var(--color-primary-bright)] to-100%"
+    : "absolute inset-0 bg-gradient-to-b from-transparent from-82% to-[var(--color-primary-soft)] to-100%";
 
   return (
     <section className={`${bgClass} relative`}>
@@ -156,14 +162,47 @@ export function FeedHeader() {
           {/* Dark glass, not white-on-primary — the side stat rings are white
            *  circles with primary icons, and the camera must read as photo
            *  CHROME, not a third stat. */}
-          <button
-            type="button"
-            onClick={cycleFamilyPhoto}
-            aria-label="Change family photo"
-            className="absolute top-2 right-3 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white shadow-sm active:scale-95 transition"
-          >
-            <Illustration name="camera" className="w-4.5 h-4.5" />
-          </button>
+          {familyPhoto ? (
+            <button
+              type="button"
+              onClick={cycleFamilyPhoto}
+              aria-label="Change family photo"
+              className="absolute top-2 right-3 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white shadow-sm active:scale-95 transition"
+            >
+              <Illustration name="camera" className="w-4.5 h-4.5" />
+            </button>
+          ) : (
+            /* No photo yet → the production add-photo guide (hand-drawn
+             * polaroid + arrow from family_picture_guide.PNG, split so the
+             * arrow points at OUR camera position, per Jonas's mock). One
+             * button = doodle + arrow + camera, per his "include it into the
+             * clickable section" — tapping anywhere on the sketch adds a
+             * photo. */
+            <button
+              type="button"
+              onClick={cycleFamilyPhoto}
+              aria-label="Add family photo"
+              className="absolute top-1 right-3 flex items-start gap-1 active:scale-95 transition"
+            >
+              <Image
+                src="/mali-art/family-photo-polaroid.png"
+                alt=""
+                width={40}
+                height={43}
+              />
+              <Image
+                src="/mali-art/family-photo-arrow.png"
+                alt=""
+                width={28}
+                height={30}
+                className="mt-1.5"
+              />
+              <Illustration
+                name="camera"
+                className="w-6 h-6 mt-1 text-white drop-shadow-sm"
+              />
+            </button>
+          )}
         </div>
       </div>
 

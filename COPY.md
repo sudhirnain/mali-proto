@@ -45,6 +45,7 @@ Tips:
 - Parenting: "Length", "Weight" — side-stat captions
 - Pregnancy: "Your weight", "Add weight" (empty CTA), "Baby's weight", "Needs update" (stale-weight dot)
 - "Change family photo" — camera badge aria-label, top-right of the header photo (cycles the family-photo backdrop; lives in `FeedHeader.tsx`)
+- "Add family photo" — aria-label of the no-photo state's hand-drawn polaroid + arrow + camera button (same spot, shown when no family photo is set; lives in `FeedHeader.tsx`)
 
 ## Welcome card (cold state) — `src/components/WelcomeCard.tsx`
 
