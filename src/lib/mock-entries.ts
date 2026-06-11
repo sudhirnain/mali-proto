@@ -65,14 +65,14 @@ export const MOCK_ENTRIES: Entry[] = [
   { id: "e17", categoryId: "note", at: iso(3 * DAY + 5 * HOUR), meta: "Pediatrician very happy with weight", photo: UNSPLASH("1502086223501-7ea6ecd79368") },
 
   // 4 days ago (May 15)
-  { id: "e18", categoryId: "bathing", at: iso(4 * DAY + 6 * HOUR), durationMin: 12, meta: "12 min, evening", photo: UNSPLASH("1492725764893-90b379c2b6e7") },
+  { id: "e18", categoryId: "bathing", at: iso(4 * DAY + 6 * HOUR), durationMin: 12, meta: "12 min, evening", photo: UNSPLASH("1617817740234-86b952cf9b04") },
 
   // 5 days ago (May 14) — milestone
   { id: "e19", categoryId: "milestone", at: iso(5 * DAY + 10 * HOUR), meta: "Holds head up", milestoneId: "m-head" },
 
   // Anniversary seeds — fuel memory-threading on /feed.
   // 7 days ago (~a week back): bath photo memory
-  { id: "e20", categoryId: "picture", at: iso(7 * DAY + 7 * HOUR), meta: "Lu's first bath at home", photo: UNSPLASH("1492725764893-90b379c2b6e7") },
+  { id: "e20", categoryId: "picture", at: iso(7 * DAY + 7 * HOUR), meta: "Lu's first bath at home", photo: UNSPLASH("1609220361664-a5cd02bc7345") },
   // 14 days ago (~two weeks): note
   { id: "e21", categoryId: "note", at: iso(14 * DAY + 6 * HOUR), meta: "Held Lu skin-to-skin for an hour. Quietest hour I've ever had." },
   // 30 days ago (~a month): a first

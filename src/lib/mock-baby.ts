@@ -52,7 +52,28 @@ export type Mom = {
   name: string;
   /** null in cold-start until first weight-mom entry. */
   weight: string | null;
+  /**
+   * User-set family photo — the feed-header backdrop (Jonas Jun-11: ~4000
+   * production users/month change their family image, so the feature stays).
+   * null until the user adds one; the header falls back to the flat phase tint.
+   */
+  familyPhoto: string | null;
 };
+
+/**
+ * Demo stand-in for the user's photo library — the header camera badge cycles
+ * through these so reviewers can feel the "change the family image" loop.
+ * Five realistic family shots (verified Unsplash IDs, header crop):
+ * golden-hour field · newborn cradle · garden walk · posing by water ·
+ * dad + laughing baby.
+ */
+export const FAMILY_PHOTOS = [
+  "https://images.unsplash.com/photo-1561525140-c2a4cc68e4bd?w=800&h=420&fit=crop&auto=format&q=70",
+  "https://images.unsplash.com/photo-1543342384-1f1350e27861?w=800&h=420&fit=crop&auto=format&q=70",
+  "https://images.unsplash.com/photo-1547948577-438c80482068?w=800&h=420&fit=crop&auto=format&q=70",
+  "https://images.unsplash.com/photo-1772310206808-28085225ac08?w=800&h=420&fit=crop&auto=format&q=70",
+  "https://images.unsplash.com/photo-1523663918461-ba90a11877a6?w=800&h=420&fit=crop&auto=format&q=70",
+];
 
 export const BABIES: Record<Phase, Baby> = {
   pregnancy: {
@@ -80,8 +101,8 @@ export const BABIES: Record<Phase, Baby> = {
 };
 
 export const MOMS: Record<Phase, Mom> = {
-  pregnancy: { name: "Sarah", weight: "68 kg" },
-  parenting: { name: "Sarah", weight: null }, // not currently surfaced in parenting UI
+  pregnancy: { name: "Sarah", weight: "68 kg", familyPhoto: FAMILY_PHOTOS[0] },
+  parenting: { name: "Sarah", weight: null, familyPhoto: FAMILY_PHOTOS[0] },
 };
 
 /**
@@ -110,6 +131,6 @@ export const FIRST_DAY_BABIES: Record<Phase, Baby> = {
 };
 
 export const FIRST_DAY_MOMS: Record<Phase, Mom> = {
-  pregnancy: { name: "Sarah", weight: null },
-  parenting: { name: "Sarah", weight: null },
+  pregnancy: { name: "Sarah", weight: null, familyPhoto: null },
+  parenting: { name: "Sarah", weight: null, familyPhoto: null },
 };

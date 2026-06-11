@@ -44,6 +44,7 @@ Tips:
 
 - Parenting: "Length", "Weight" — side-stat captions
 - Pregnancy: "Your weight", "Add weight" (empty CTA), "Baby's weight", "Needs update" (stale-weight dot)
+- "Change family photo" — camera badge aria-label, top-right of the header photo (cycles the family-photo backdrop; lives in `FeedHeader.tsx`)
 
 ## Welcome card (cold state) — `src/components/WelcomeCard.tsx`
 
@@ -237,7 +238,7 @@ Tips:
 
 Every "Last 30 days" chart shares: "Last 30 days" (header) · "30 days ago" / "today" (x-axis). Per chart:
 
-- **Sleep** (`Sleep`, hours): series "Baby" / "Mom"; blurb "Total hours of sleep per day. Newborns often need 14–17 h, toddlers 11–14 h." (mom-only variant: "Pregnant mothers need ~8–9 h; new mothers often get 5–6 but need 10+ to heal."); footer "{N} h baby · {N} h mom daily avg". *Shows on both the baby Sleep and Mom's Sleep pages.*
+- **Sleep** (`Sleep`, hours): series "Baby" / "Mom" (legend only — the interactive Baby/Mom pills were removed Jun-11); blurb "Total hours of sleep per day. Newborns often need 14–17 h of total sleep, toddlers 11–14 h. Pregnant mothers need ~8–9 h; new mothers often get 5–6 but need 10+ to heal."; footer "{N} h baby · {N} h mom daily avg". *Shows on both the baby Sleep and Mom's Sleep pages.*
 - **Nursing** (`Feeds`, minutes): series "Poor" / "Okay" / "Good"; blurb "Each block is one nursing session — grey = poor, light green = okay, green = good. Minutes per day."; footer "{N} min daily avg"
 - **Pumping** (`Pumping`, ml): "Total volume pumped per day (ml)." · "{N} ml daily avg"
 - **Bottle** (`Bottle`, ml): "Bottle-fed milk per day (ml). First month ~450–750 ml, later 750–950 ml." · "{N} ml daily avg" · "Read more"

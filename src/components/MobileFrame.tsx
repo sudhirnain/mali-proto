@@ -60,11 +60,14 @@ export function MobileFrame({ children }: { children: ReactNode }) {
         </PhotoLightboxProvider>
       </div>
 
-      {/* Demo navigator — desktop floats outside the frame, mobile compact pill on top */}
+      {/* Demo navigator — desktop floats outside the frame; mobile compact
+       *  pill sits top-LEFT so the top-right corner stays free for the
+       *  family-photo camera badge (its final product position per Jonas's
+       *  mock A). */}
       <div className="hidden md:block fixed top-6 right-6 z-50">
         <DemoNavigator />
       </div>
-      <div className="md:hidden fixed top-2 right-2 z-50">
+      <div className="md:hidden fixed top-2 left-2 z-50">
         <DemoNavigator compact />
       </div>
     </div>

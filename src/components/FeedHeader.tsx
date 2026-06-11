@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { usePhase } from "@/lib/phase";
-import { useColdMode, useBaby } from "@/lib/cold-mode";
+import { useColdMode, useBaby, useMom } from "@/lib/cold-mode";
+import { FAMILY_PHOTOS } from "@/lib/mock-baby";
 import { defaultQuickLogs, expandedHeaderExtras } from "@/lib/categories";
 import { useEntries } from "@/lib/journal-store";
 import { TODAY_DATE } from "@/lib/mock-entries";
@@ -11,6 +12,7 @@ import { useScrollY } from "@/lib/scroll";
 import { StatStrip } from "./StatStrip";
 import { QuickLogCard, MiniLogTile } from "./QuickLogCard";
 import { JournalPulse } from "./JournalPulse";
+import { Illustration } from "./Illustration";
 import { MilestoneHero } from "./journal/MilestoneHero";
 import { JourneyHero } from "./journal/JourneyHero";
 
@@ -30,7 +32,8 @@ const PREGNANCY_COMPACT_TILES = [
  * Phase-aware feed header — the journal's command center.
  *
  * Contents:
- *  1. StatStrip (phase-first: baby for parenting, mom for pregnancy)
+ *  1. StatStrip (phase-first: baby for parenting, mom for pregnancy), over
+ *     the user-set family-photo backdrop (fades into the phase tint)
  *  2. 3 quick-log cards (phase-appropriate)
  *  3. JournalPulse — "X entries today · last Y ago →"
  *  4. Progress hero — MilestoneHero (parenting) / JourneyHero (pregnancy)
@@ -41,7 +44,23 @@ export function FeedHeader() {
   const cold = useColdMode();
   const entries = useEntries();
   const baby = useBaby();
+  const mom = useMom();
   const [expanded, setExpanded] = useState(false);
+  // Family-photo backdrop (Jonas Jun-11 — ~4000 production users/month change
+  // their family image, keep the feature). The seed comes from the mom record
+  // (null on first-day personas → flat tint); the camera badge cycles a small
+  // demo pool so reviewers can feel the change-photo loop.
+  const [photoIdx, setPhotoIdx] = useState<number | null>(null);
+  // Cold flips via search param (no remount) — drop any cycled override so
+  // the first-day persona returns to the no-photo flat tint.
+  useEffect(() => setPhotoIdx(null), [cold]);
+  const familyPhoto = photoIdx === null ? mom.familyPhoto : FAMILY_PHOTOS[photoIdx];
+  const cycleFamilyPhoto = () =>
+    setPhotoIdx(
+      (i) =>
+        ((i === null ? FAMILY_PHOTOS.indexOf(mom.familyPhoto ?? "") : i) + 1) %
+        FAMILY_PHOTOS.length,
+    );
   // Slide 8 — 3-state scroll transition. scrollY drives two stacked pills
   // that cross-fade based on position:
   //   0 → 40px   nothing (full header is the show)
@@ -74,9 +93,18 @@ export function FeedHeader() {
   }, [entries, cold, isPreg]);
 
   const bgClass = isPreg ? "bg-[var(--color-primary-bright)]" : "bg-[var(--color-primary-soft)]";
+  // Photo treatment per Jonas's A/C mocks (clearer shots, Jun-11): the photo
+  // stays PHOTOGRAPHIC across the strip — stat labels render in white on it —
+  // and only the bottom EDGE melts into the flat tint ("transition to
+  // pink/green gradient"). No full-photo veil — it dulled the picture
+  // (Sudhir). Both branches are full literal class strings so Tailwind's
+  // scanner sees them (string-built class names get tree-shaken).
+  const scrimClass = isPreg
+    ? "absolute inset-0 bg-gradient-to-b from-transparent from-72% to-[var(--color-primary-bright)] to-100%"
+    : "absolute inset-0 bg-gradient-to-b from-transparent from-72% to-[var(--color-primary-soft)] to-100%";
 
   return (
-    <section className={`${bgClass} relative md:pt-11`}>
+    <section className={`${bgClass} relative`}>
       {/* Slide 8 — single floating pill that morphs between two phases as
        *  the user scrolls past the StatStrip:
        *   1. "Lu is the size of an avocado"  (the fruit explainer)
@@ -93,7 +121,51 @@ export function FeedHeader() {
         />
       )}
 
-      <StatStrip />
+      {/* Family-photo backdrop — scoped to the StatStrip zone only (Jonas's
+       *  option C; behind the WHOLE header it fights the quick-log cards and
+       *  user photos make the text illegible). The status-bar clearance
+       *  (md:pt-11) lives on this wrapper, not the section, so the photo
+       *  bleeds to the top of the phone shell. No photo → flat tint. */}
+      <div className={`relative md:pt-11 ${familyPhoto ? "pb-3" : ""}`}>
+        {familyPhoto && (
+          <div className="absolute inset-0 overflow-hidden" aria-hidden>
+            <Image
+              src={familyPhoto}
+              alt=""
+              fill
+              sizes="430px"
+              className="object-cover"
+              priority
+            />
+            {/* light frost at the very top — the fake iOS status bar renders
+             *  BLACK glyphs, so they need a light backdrop, not a dark one */}
+            <div className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-white/60 to-transparent" />
+            {/* soft darken that peaks under the white labels then releases,
+             *  so it doesn't stack a value cliff onto the tint melt below */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent from-50% via-black/25 via-78% to-transparent" />
+            <div className={scrimClass} />
+          </div>
+        )}
+        <div className="relative">
+          <StatStrip onPhoto={!!familyPhoto} />
+          {/* Change-photo affordance at the photo's top-right corner (final
+           *  position per Jonas's mock A — the mobile DemoNavigator pill
+           *  moved to the top-left to free this corner). Cycles the demo
+           *  pool; from a no-photo state the first tap "adds" one — the
+           *  engagement hook behind the 4000 changes/month. */}
+          {/* Dark glass, not white-on-primary — the side stat rings are white
+           *  circles with primary icons, and the camera must read as photo
+           *  CHROME, not a third stat. */}
+          <button
+            type="button"
+            onClick={cycleFamilyPhoto}
+            aria-label="Change family photo"
+            className="absolute top-2 right-3 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white shadow-sm active:scale-95 transition"
+          >
+            <Illustration name="camera" className="w-4.5 h-4.5" />
+          </button>
+        </div>
+      </div>
 
       {/* Quick-log row — pregnancy uses 4 mini tiles (tighter, daily
        *  mom-experience trackers); parenting keeps the 3 big QuickLogCards.   */}

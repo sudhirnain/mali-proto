@@ -9,8 +9,8 @@ import type { Category } from "@/lib/categories";
  * across slides 9–17 (his reusable bar-template mockup). One bar per day, with
  * per-category encodings:
  *
- *   sleep        — grouped Baby/Mom bars + a toggle (check baby / mom / both)
- *   nursing      — stacked yellow=success / grey=failure minutes
+ *   sleep        — grouped Baby/Mom bars + bottom legend (no toggle — Jun-11)
+ *   nursing      — per-session stacks colored by quality (grey/light/green)
  *   pumping/bottle — single ml bars
  *   diaper       — stacked by type (pee/poo/mixed/clean/other) + legend
  *   temperature  — single bars, 38°C+ in red (pairs with the fever warning)
@@ -59,16 +59,13 @@ type ChartConfig = {
   /** Faint target bar drawn behind each day's bar — water 2.5 L "show in light behind". */
   ghost?: { value: number; label: string };
   threshold?: { at: number; color: string }; // single layout: recolor bars >= at
-  /** Show the series check-toggle pills (sleep baby/mom, diaper by type). */
+  /** Show the series check-toggle pills (diaper by type). */
   toggle?: boolean;
   /** "Read more" article slug appended after the blurb (bottle, temperature). */
   articleSlug?: string;
   showLegend: boolean;
   blurb: string;
-  /** Blurb that varies with which series are visible (sleep baby/mom). */
-  blurbFor?: (visible: boolean[]) => string;
-  /** Footer summary; receives which series are visible (sleep toggle). */
-  footer: (visible: boolean[]) => string;
+  footer: () => string;
 };
 
 function buildConfig(catId: string): ChartConfig {
@@ -94,22 +91,13 @@ function buildConfig(catId: string): ChartConfig {
         ],
         layout: "group",
         data,
-        toggle: true,
+        // No series toggle — Jonas's team read the Baby/Mom pills as a page
+        // mode (expecting the add-CTA to follow them). The static legend at
+        // the bottom explains the colors instead (Jonas Jun-11 mail).
         showLegend: true,
-        blurb: "Total hours of sleep per day. Newborns often need 14–17 h, toddlers 11–14 h.",
-        blurbFor: (vis) => {
-          const baby = "Newborns often need 14–17 h of total sleep, toddlers 11–14 h.";
-          const mom = "Pregnant mothers need ~8–9 h; new mothers often get 5–6 but need 10+ to heal.";
-          if (vis[1] && !vis[0]) return `Total hours of sleep per day. ${mom}`;
-          if (vis[0] && vis[1]) return `Total hours of sleep per day. ${baby} ${mom}`;
-          return `Total hours of sleep per day. ${baby}`;
-        },
-        footer: (vis) => {
-          const parts: string[] = [];
-          if (vis[0]) parts.push(`${avgB} h baby`);
-          if (vis[1]) parts.push(`${avgM} h mom`);
-          return parts.length ? `${parts.join(" · ")} daily avg` : "";
-        },
+        blurb:
+          "Total hours of sleep per day. Newborns often need 14–17 h of total sleep, toddlers 11–14 h. Pregnant mothers need ~8–9 h; new mothers often get 5–6 but need 10+ to heal.",
+        footer: () => `${avgB} h baby · ${avgM} h mom daily avg`,
       };
     }
     case "nursing": {
@@ -270,12 +258,14 @@ const fmtTick = (catId: string, v: number) =>
 
 export function CategoryBarChart({ cat }: { cat: Category }) {
   const cfg = buildConfig(cat.id);
-  // Series check-toggle (Jonas s9 sleep baby/mom, s15 diaper by type). Categories
-  // without `toggle` always show every series.
+  // Series check-toggle (Jonas s15 diaper by type — there type is a filter,
+  // not a mode; the sleep Baby/Mom pills were removed Jun-11 because they
+  // read as a page-level mode switch). Categories without `toggle` always
+  // show every series.
   const [visible, setVisible] = useState<boolean[]>(cfg.series.map(() => true));
   const hasToggle = !!cfg.toggle;
   const vis = hasToggle ? visible : cfg.series.map(() => true);
-  const blurbText = cfg.blurbFor ? cfg.blurbFor(vis) : cfg.blurb;
+  const blurbText = cfg.blurb;
   const ghost = cfg.ghost;
 
   const W = 320;
@@ -308,7 +298,7 @@ export function CategoryBarChart({ cat }: { cat: Category }) {
           <div className="text-xs text-neutral-500">Last 30 days</div>
         </div>
 
-        {/* Series toggle (sleep baby/mom, diaper by type) */}
+        {/* Series toggle (diaper by type) */}
         {hasToggle && (
           <div className="flex flex-wrap gap-2 mb-3">
             {cfg.series.map((s, i) => (
@@ -485,7 +475,7 @@ export function CategoryBarChart({ cat }: { cat: Category }) {
         )}
 
         <p className="text-sm text-neutral-700 leading-relaxed mt-3">
-          <span className="font-semibold text-neutral-900 tabular-nums">{cfg.footer(vis)}</span>
+          <span className="font-semibold text-neutral-900 tabular-nums">{cfg.footer()}</span>
           {blurbText ? ` — ${blurbText}` : ""}
           {cfg.articleSlug && (
             <>

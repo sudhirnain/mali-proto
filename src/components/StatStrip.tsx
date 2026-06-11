@@ -20,14 +20,24 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
  * user-editable per A5c). Days-countdown + due-date editing live in
  * JourneyHero (slide 6 layout: "Due date YYYY →" row inside the expanded card).
  */
-export function StatStrip() {
+type StripProps = {
+  /** True when the family-photo backdrop is behind the strip — text flips to
+   *  white-on-photo (Jonas's A/C mocks render the labels on the photo). */
+  onPhoto?: boolean;
+};
+
+export function StatStrip({ onPhoto }: StripProps) {
   const { phase } = usePhase();
   const preg = isPregnancy(phase);
 
-  return preg ? <PregnancyStatStrip /> : <ParentingStatStrip />;
+  return preg ? (
+    <PregnancyStatStrip onPhoto={onPhoto} />
+  ) : (
+    <ParentingStatStrip onPhoto={onPhoto} />
+  );
 }
 
-function ParentingStatStrip() {
+function ParentingStatStrip({ onPhoto }: StripProps) {
   const baby = useBaby();
 
   return (
@@ -39,12 +49,14 @@ function ParentingStatStrip() {
           value={baby.length}
           caption="Length"
           href="/journal/category/length"
+          onPhoto={onPhoto}
         />
 
         <CenterHero
           imageSrc="/mali-illustrations/happy_hands_up_baby.png"
           welcome={baby.name}
           subline={baby.ageLabel}
+          onPhoto={onPhoto}
         />
 
         <SideStat
@@ -53,13 +65,14 @@ function ParentingStatStrip() {
           value={baby.weight}
           caption="Weight"
           href="/journal/category/weight-baby"
+          onPhoto={onPhoto}
         />
       </div>
     </div>
   );
 }
 
-function PregnancyStatStrip() {
+function PregnancyStatStrip({ onPhoto }: StripProps) {
   const baby = useBaby();
   const mom = useMom();
   const cold = useColdMode();
@@ -103,6 +116,7 @@ function PregnancyStatStrip() {
           href="/journal/category/weight-mom"
           emptyCta={{ href: "/log/weight-mom", label: "Add weight" }}
           dueDot={weightDue}
+          onPhoto={onPhoto}
         />
 
         {/* Slide 4: "Needs to be the baby name" — pregnancy center reads Lu
@@ -115,6 +129,7 @@ function PregnancyStatStrip() {
           imageFallback="/mali-illustrations/pregnant_9.png"
           welcome={baby.name}
           subline={baby.ageLabel}
+          onPhoto={onPhoto}
         />
 
         {/* Right — baby weight readout (backend-sourced estimate). Mirrors
@@ -128,6 +143,7 @@ function PregnancyStatStrip() {
           value={baby.weight}
           caption="Baby's weight"
           href="/journal/moments"
+          onPhoto={onPhoto}
         />
       </div>
     </div>
@@ -139,11 +155,14 @@ function CenterHero({
   imageFallback,
   welcome,
   subline,
+  onPhoto,
 }: {
   imageSrc: string;
   imageFallback?: string;
   welcome: string;
   subline: string;
+  /** White-on-photo text when the family-photo backdrop is behind the strip. */
+  onPhoto?: boolean;
 }) {
   const [src, setSrc] = useState(imageSrc);
   return (
@@ -160,10 +179,20 @@ function CenterHero({
           }}
         />
       </div>
-      <div className="serif text-lg leading-tight mt-2 font-semibold text-neutral-900">
+      <div
+        className={`serif text-lg leading-tight mt-2 font-semibold ${
+          onPhoto ? "text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.45)]" : "text-neutral-900"
+        }`}
+      >
         {welcome}
       </div>
-      <div className="text-xs text-neutral-700 text-center px-1">{subline}</div>
+      <div
+        className={`text-xs text-center px-1 ${
+          onPhoto ? "text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]" : "text-neutral-700"
+        }`}
+      >
+        {subline}
+      </div>
     </div>
   );
 }
@@ -176,6 +205,7 @@ function SideStat({
   href,
   emptyCta,
   dueDot,
+  onPhoto,
 }: {
   buttonAria: string;
   buttonIcon: React.ReactNode;
@@ -185,36 +215,56 @@ function SideStat({
   emptyCta?: { href: string; label: string };
   /** Renders a small red dot in the top-right of the icon ring. */
   dueDot?: boolean;
+  /** White-on-photo text when the family-photo backdrop is behind the strip. */
+  onPhoto?: boolean;
 }) {
   const ringClass = "border border-[var(--color-primary)]/40";
+  const valueClass = onPhoto
+    ? "text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]"
+    : "text-neutral-900";
+  const captionClass = onPhoto
+    ? "text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]"
+    : "text-neutral-700";
 
   const linkHref = value ? href : emptyCta?.href;
 
   const body = (
     <>
       <div className="relative">
+        {/* Over the family photo the old white/40 frost picked up the photo's
+         *  darks and went muddy — near-solid white instead, matching the
+         *  center circle + camera badge. Flat tint keeps the original
+         *  see-through treatment. */}
         <div
           aria-label={buttonAria}
-          className={`w-12 h-12 rounded-full ${ringClass} flex items-center justify-center text-[var(--color-primary)] bg-white/40`}
+          className={`w-12 h-12 rounded-full ${ringClass} flex items-center justify-center text-[var(--color-primary)] ${
+            onPhoto ? "bg-white/85 backdrop-blur-sm" : "bg-white/40"
+          }`}
         >
           {buttonIcon}
         </div>
         {dueDot && (
           <span
-            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[var(--color-primary-bright)]"
+            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white"
             aria-label="Needs update"
           />
         )}
       </div>
       {value ? (
         <>
-          <div className="text-xs font-semibold text-neutral-900 leading-tight mt-1 tabular-nums">
+          <div className={`text-xs font-semibold leading-tight mt-1 tabular-nums ${valueClass}`}>
             {value}
           </div>
-          <div className="text-xs text-neutral-700 -mt-0.5">{caption}</div>
+          <div className={`text-xs -mt-0.5 ${captionClass}`}>{caption}</div>
         </>
       ) : emptyCta ? (
-        <div className="text-xs font-semibold text-[var(--color-primary-dark)] mt-1 underline decoration-dotted underline-offset-2 text-center leading-tight">
+        <div
+          className={`text-xs font-semibold mt-1 underline decoration-dotted underline-offset-2 text-center leading-tight ${
+            onPhoto
+              ? "text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]"
+              : "text-[var(--color-primary-dark)]"
+          }`}
+        >
           {emptyCta.label} →
         </div>
       ) : (
@@ -222,10 +272,14 @@ function SideStat({
         // and not user-actionable). Show em-dash placeholder so the layout
         // structure matches the populated state: ring + value + caption.
         <>
-          <div className="text-xs font-semibold text-neutral-400 leading-tight mt-1 tabular-nums">
+          <div
+            className={`text-xs font-semibold leading-tight mt-1 tabular-nums ${
+              onPhoto ? "text-white/70" : "text-neutral-400"
+            }`}
+          >
             —
           </div>
-          <div className="text-xs text-neutral-700 -mt-0.5">{caption}</div>
+          <div className={`text-xs -mt-0.5 ${captionClass}`}>{caption}</div>
         </>
       )}
     </>
