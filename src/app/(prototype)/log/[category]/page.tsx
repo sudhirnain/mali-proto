@@ -99,9 +99,10 @@ function CategoryIconBadge({ cat }: { cat: Category }) {
 function FormBody({ cat, editing }: { cat: Category; editing?: Entry }) {
   switch (cat.formKind) {
     case "timer":
-      // Nursing gets its own dual left/right timer + Success/Failure outcome
-      // (Jonas round-3 s12); other timer categories share TimerEntryForm.
-      return cat.id === "nursing" ? (
+      // Nursing AND pumping get the dual left/right switchable timer (Jonas
+      // round-3 s12, extended to pumping per his Jun-11 "it should be like
+      // Nursing"); other timer categories share TimerEntryForm.
+      return cat.id === "nursing" || cat.id === "pumping" ? (
         <NursingForm cat={cat} editing={editing} />
       ) : (
         <TimerEntryForm cat={cat} editing={editing} />
@@ -163,8 +164,9 @@ function useSaveEntry(cat: Category, editing?: Entry) {
 /* ------------------------------------------------------------------ */
 
 /**
- * Category-adaptive timer entry form for every `formKind: "timer"` category
- * (sleep, sleep-mom, nursing, bottle, pumping, stroll, bathing). Field-first:
+ * Category-adaptive timer entry form for `formKind: "timer"` categories
+ * (sleep, sleep-mom, bottle, stroll, bathing — nursing/pumping use
+ * NursingForm). Field-first:
  * Start/End are the PRIMARY logging method so historic data is always
  * enterable (Jonas s4: the old bare stopwatch couldn't add past entries).
  *
@@ -174,21 +176,16 @@ function useSaveEntry(cat: Category, editing?: Entry) {
  * Start/End fields from the elapsed session.
  *
  * Per-category extras (My Baby parity, slides 27/30/34/36):
- *   nursing/pumping → Left/Both/Right side
- *   bottle/pumping  → Quantity (ml)
- *   bottle          → Breast milk/Formula
+ *   bottle          → Quantity (ml) + Breast milk/Formula
  *   sleep/sleep-mom → Daytime/Night + quick chips ("Just woke up", etc.)
- *   sleep/bottle/pumping → Comments
+ *   sleep/bottle    → Comments
+ * (Nursing and pumping live in NursingForm — dual L/R timers.)
  */
 function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const isSleep = cat.id === "sleep" || cat.id === "sleep-mom";
-  const showSide = cat.id === "nursing" || cat.id === "pumping";
-  const showQuantity = cat.id === "bottle" || cat.id === "pumping";
+  const showQuantity = cat.id === "bottle";
   const showMilkType = cat.id === "bottle";
-  const showComments = isSleep || cat.id === "bottle" || cat.id === "pumping";
-  // Pumping rates like nursing (Jonas Jun-11 follow-up), but pre-set to Okay —
-  // a so-so pump is the typical session, unlike nursing's Good default.
-  const showQuality = cat.id === "pumping";
+  const showComments = isSleep || cat.id === "bottle";
 
   const defaultEnd = editing?.at ? new Date(editing.at) : new Date();
   const defaultStart = editing?.durationMin
@@ -200,10 +197,8 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   // Daytime/Night is auto-derived from the start time (no manual toggle — it
   // was redundant with the start, see 2026-06-02). Still recorded on the entry.
   const sleepKind = inferSleepKind(start);
-  const [side, setSide] = useState<"left" | "right" | "both">(() => parseSide(editing?.meta) ?? "right");
-  const [quantityMl, setQuantityMl] = useState<number>(() => parseMl(editing?.meta) ?? (cat.id === "bottle" ? 120 : 90));
+  const [quantityMl, setQuantityMl] = useState<number>(() => parseMl(editing?.meta) ?? 120);
   const [milkType, setMilkType] = useState<"Breast milk" | "Formula">(() => (/formula/i.test(editing?.meta ?? "") ? "Formula" : "Breast milk"));
-  const [quality, setQuality] = useState<"Poor" | "Okay" | "Good">(() => parseQuality(editing?.meta) ?? "Okay");
   const [comments, setComments] = useState<string>("");
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
 
@@ -295,15 +290,6 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
             <DateTimeInput value={end} onChange={setEnd} />
           </div>
 
-          {showSide && (
-            <SegmentedToggle
-              options={["left", "both", "right"] as const}
-              value={side}
-              onChange={setSide}
-              capitalize
-            />
-          )}
-
           {showQuantity && (
             <Field label="Quantity (ml)">
               <input
@@ -324,29 +310,6 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               value={milkType}
               onChange={setMilkType}
             />
-          )}
-
-          {showQuality && (
-            <Field label="How did it go?">
-              <div className="flex gap-2">
-                {(["Poor", "Okay", "Good"] as const).map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => setQuality(q)}
-                    aria-pressed={quality === q}
-                    className={`flex-1 py-2 rounded-full text-sm font-semibold border transition ${
-                      quality === q
-                        ? "text-white border-transparent"
-                        : "text-neutral-600 border-neutral-200 bg-white active:bg-neutral-50"
-                    }`}
-                    style={quality === q ? { backgroundColor: accent } : undefined}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </Field>
           )}
 
           {showComments && (
@@ -379,8 +342,6 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               if (isSleep) parts.push(sleepKind);
               if (showQuantity) parts.push(`${quantityMl}ml`);
               if (showMilkType) parts.push(milkType);
-              if (showSide) parts.push(side);
-              if (showQuality) parts.push(quality);
               const baseMeta = parts.join(", ");
               const note = comments.trim();
               save({
@@ -400,27 +361,34 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
 /**
  * Nursing form — dual left/right timing (Jonas round-3 s12 "introduce left and
  * right for the time"; reference = two stopwatches) + a Success/Failure outcome
- * ("change the CTA to be SUCCESS and FAILURE"). Replaces TimerEntryForm for
- * nursing only; pumping keeps the single timer.
+ * ("change the CTA to be SUCCESS and FAILURE"). Serves nursing AND pumping
+ * (Jonas Jun-11: pumping "should be like Nursing" — switchable breasts);
+ * pumping additionally records Quantity (ml).
  *
  * Live: two stopwatches, one breast at a time (starting one pauses the other),
  * each accumulating across pauses; the running side survives navigation via
- * ActiveTimer keyed `nursing:left` / `nursing:right`. Manual: per-side minute
- * inputs for retro logging. Either way the entry records per-side time +
- * outcome, e.g. "12 min (L 7m · R 5m), Success".
+ * ActiveTimer keyed `<category>:left` / `<category>:right`. Manual: per-side
+ * minute inputs for retro logging. Either way the entry records per-side time +
+ * quality, e.g. "12 min (L 7m · R 5m), Good" / "8 min (L 4m · R 4m), 90ml, Okay".
  */
 function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const save = useSaveEntry(cat, editing);
   const timer = useActiveTimer();
   const accent = `var(--color-${cat.color})`;
+  const isPumping = cat.id === "pumping";
+  const keyFor = (side: "left" | "right") => `${cat.id}:${side}`;
 
   const [mode, setMode] = useState<"Manual" | "Live timer">(
-    timer.timerFor("nursing:left") || timer.timerFor("nursing:right") ? "Live timer" : "Manual",
+    timer.timerFor(keyFor("left")) || timer.timerFor(keyFor("right")) ? "Live timer" : "Manual",
   );
   // Quality rating (Jonas Jun-8 mail "pre-select 'good' quality… show all 3
-  // states"): Poor / Okay / Good, defaulting to Good so most sessions log a
-  // quality without a tap and the 30-day chart always carries all three states.
-  const [quality, setQuality] = useState<"Poor" | "Okay" | "Good">("Good");
+  // states"): Poor / Okay / Good. Nursing defaults to Good; pumping to Okay
+  // (Jonas Jun-11) — either way most sessions log a quality without a tap and
+  // the 30-day chart always carries all three states.
+  const [quality, setQuality] = useState<"Poor" | "Okay" | "Good">(
+    () => parseQuality(editing?.meta) ?? (isPumping ? "Okay" : "Good"),
+  );
+  const [quantityMl, setQuantityMl] = useState<number>(() => parseMl(editing?.meta) ?? 90);
   const [comments, setComments] = useState("");
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
 
@@ -432,28 +400,28 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   // ticked since it last started.
   const [leftAcc, setLeftAcc] = useState(0);
   const [rightAcc, setRightAcc] = useState(0);
-  const leftRunning = !!timer.timerFor("nursing:left");
-  const rightRunning = !!timer.timerFor("nursing:right");
+  const leftRunning = !!timer.timerFor(keyFor("left"));
+  const rightRunning = !!timer.timerFor(keyFor("right"));
   const liveSec = (side: "left" | "right") => {
     const acc = side === "left" ? leftAcc : rightAcc;
     const running = side === "left" ? leftRunning : rightRunning;
-    return acc + (running ? timer.elapsedSec(`nursing:${side}`) : 0);
+    return acc + (running ? timer.elapsedSec(keyFor(side)) : 0);
   };
 
   const pauseSide = (side: "left" | "right") => {
-    if (!timer.timerFor(`nursing:${side}`)) return;
-    const sec = timer.elapsedSec(`nursing:${side}`);
-    timer.stop(`nursing:${side}`);
+    if (!timer.timerFor(keyFor(side))) return;
+    const sec = timer.elapsedSec(keyFor(side));
+    timer.stop(keyFor(side));
     if (side === "left") setLeftAcc((s) => s + sec);
     else setRightAcc((s) => s + sec);
   };
   const startSide = (side: "left" | "right") => {
     pauseSide(side === "left" ? "right" : "left"); // one breast at a time
-    if (!timer.timerFor(`nursing:${side}`)) timer.start(`nursing:${side}`);
+    if (!timer.timerFor(keyFor(side))) timer.start(keyFor(side));
   };
   const resetTimers = () => {
-    if (timer.timerFor("nursing:left")) timer.stop("nursing:left");
-    if (timer.timerFor("nursing:right")) timer.stop("nursing:right");
+    if (timer.timerFor(keyFor("left"))) timer.stop(keyFor("left"));
+    if (timer.timerFor(keyFor("right"))) timer.stop(keyFor("right"));
     setLeftAcc(0);
     setRightAcc(0);
   };
@@ -492,7 +460,8 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
     if (lMin > 0) sides.push(`L ${lMin}m`);
     if (rMin > 0) sides.push(`R ${rMin}m`);
     const sideStr = sides.length ? ` (${sides.join(" · ")})` : "";
-    const base = `${total} min${sideStr}, ${quality}`;
+    const mlStr = isPumping ? `, ${quantityMl}ml` : "";
+    const base = `${total} min${sideStr}${mlStr}, ${quality}`;
     const note = comments.trim();
     return { total, meta: note ? `${base} — ${note}` : base };
   };
@@ -500,8 +469,8 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const saveLive = () => {
     const lSec = liveSec("left");
     const rSec = liveSec("right");
-    if (leftRunning) timer.stop("nursing:left");
-    if (rightRunning) timer.stop("nursing:right");
+    if (leftRunning) timer.stop(keyFor("left"));
+    if (rightRunning) timer.stop(keyFor("right"));
     const { total, meta } = metaFor(lSec, rSec);
     save({ at: new Date().toISOString(), durationMin: total, meta, photo });
   };
@@ -533,6 +502,20 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
           </button>
         ))}
       </div>
+    </Field>
+  );
+
+  const quantityField = isPumping && (
+    <Field label="Quantity (ml)">
+      <input
+        type="number"
+        inputMode="numeric"
+        value={quantityMl}
+        min={0}
+        step={10}
+        onChange={(e) => setQuantityMl(Number(e.target.value) || 0)}
+        className={`${INPUT_CLASS} text-base tabular-nums`}
+      />
     </Field>
   );
 
@@ -591,6 +574,7 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               );
             })}
           </div>
+          {quantityField}
           {qualityField}
           {commentsField}
           <PhotoAttachField photo={photo} onChange={setPhoto} />
@@ -622,6 +606,7 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               />
             </Field>
           </div>
+          {quantityField}
           {qualityField}
           {commentsField}
           <PhotoAttachField photo={photo} onChange={setPhoto} />
@@ -632,17 +617,15 @@ function NursingForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   );
 }
 
-/** Pill segmented control shared by every timer-form choice (side, milk, sleep kind). */
+/** Pill segmented control shared by every timer-form choice (mode, milk type). */
 function SegmentedToggle<T extends string>({
   options,
   value,
   onChange,
-  capitalize,
 }: {
   options: readonly T[];
   value: T;
   onChange: (v: T) => void;
-  capitalize?: boolean;
 }) {
   return (
     <div className="bg-neutral-100 rounded-full p-1 flex">
@@ -651,7 +634,7 @@ function SegmentedToggle<T extends string>({
           key={o}
           type="button"
           onClick={() => onChange(o)}
-          className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${capitalize ? "capitalize" : ""} ${
+          className={`flex-1 text-sm font-semibold py-2 rounded-full transition ${
             value === o ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
           }`}
         >
@@ -672,14 +655,6 @@ function formatTimerLive(sec: number): string {
 function formatGap(ms: number): string {
   const sec = Math.round(ms / 1000);
   return sec < 90 ? `~${sec}s` : `~${Math.round(sec / 60)} min`;
-}
-
-function parseSide(meta?: string): "left" | "right" | "both" | null {
-  if (!meta) return null;
-  if (/right/i.test(meta)) return "right";
-  if (/left/i.test(meta)) return "left";
-  if (/both/i.test(meta)) return "both";
-  return null;
 }
 
 function parseMl(meta?: string): number | null {

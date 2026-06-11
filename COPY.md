@@ -147,17 +147,17 @@ Tips:
 - Page header: category label (new) / "Edit {category}" (editing)
 - Error: "Unknown category"
 
-### Timer form (sleep, bottle, pumping, stroll, bathing, Mom's sleep)
+### Timer form (sleep, bottle, stroll, bathing, Mom's sleep)
 - Toggle: "Manual" / "Live timer"
 - Live: "Running — keeps going if you navigate away" · "Stop & review" · "00:00" · "Start timer" · "Runs in the background — Stop fills the times so you can review & save."
-- Fields: "Start" · "End" · "End is before start" (error) · "Quantity (ml)" · "Comments (optional)" / "Anything you want to remember?"
-- Side toggle (nursing/bottle): left / both / right · Milk type: "Breast milk" / "Formula"
-- **Pumping quality: "How did it go?" — options "Poor" · "Okay" · "Good"** (Okay is pre-selected)
+- Fields: "Start" · "End" · "End is before start" (error) · "Quantity (ml)" (bottle) · "Comments (optional)" / "Anything you want to remember?"
+- Milk type (bottle): "Breast milk" / "Formula"
 
-### Nursing form
+### Nursing & Pumping form (dual left/right timer)
 - Toggle: "Manual" / "Live timer"
 - Live sides: "Left" / "Right" · buttons "Start" / "Pause" / "Resume"
-- **Quality: "How did it go?" — options "Poor" · "Okay" · "Good"** (Good is pre-selected)
+- **Quality: "How did it go?" — options "Poor" · "Okay" · "Good"** (nursing pre-selects Good, pumping pre-selects Okay)
+- Pumping only: "Quantity (ml)"
 - "Comments (optional)" / "Anything you want to remember?"
 - Manual: "Left (min)" · "Right (min)" · header "Reset timers"
 
