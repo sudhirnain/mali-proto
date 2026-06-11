@@ -10,8 +10,8 @@ import type { Category } from "@/lib/categories";
  * per-category encodings:
  *
  *   sleep        — grouped Baby/Mom bars + bottom legend (no toggle — Jun-11)
- *   nursing      — per-session stacks colored by quality (grey/light/green)
- *   pumping/bottle — single ml bars
+ *   nursing/pumping — per-session stacks colored by quality (grey/light/green)
+ *   bottle       — single ml bars
  *   diaper       — stacked by type (pee/poo/mixed/clean/other) + legend
  *   temperature  — single bars, 38°C+ in red (pairs with the fever warning)
  *   hydration    — single litre bars + a faint 2.5 L recommended line
@@ -53,8 +53,10 @@ type ChartConfig = {
   series: Series[];
   layout: "stack" | "group" | "single";
   data: number[][]; // [day][seriesIndex]
-  /** Per-day session segments, each coloured by quality — nursing "indicate
-   *  sessions". `q` indexes into `series` (0 Poor, 1 Okay, 2 Good). */
+  /** Per-day session segments, each coloured by quality — nursing/pumping
+   *  "indicate sessions". `min` is the segment's value in the chart's unit
+   *  (minutes for nursing, ml for pumping); `q` indexes into `series`
+   *  (0 Poor, 1 Okay, 2 Good). */
   sessions?: { min: number; q: number }[][];
   /** Faint target bar drawn behind each day's bar — water 2.5 L "show in light behind". */
   ghost?: { value: number; label: string };
@@ -135,19 +137,35 @@ function buildConfig(catId: string): ChartConfig {
       };
     }
     case "pumping": {
-      const ml = gen("pump", (r) => 80 + r * 300); // 80–380 ml
-      const avg = r0(mean(ml));
+      // Same per-session quality stacks as nursing (Jonas Jun-11 follow-up:
+      // "in the graph we want to show these sessions, just as we do for
+      // nursing"), but in ml and skewed to Okay — the form's default.
+      const qual = (r: number) => (r < 0.2 ? 0 : r < 0.65 ? 1 : 2); // ~20% poor / 45% okay / 35% good
+      const sessions = Array.from({ length: DAYS }, (_, d) => {
+        const n = 2 + Math.round(seeded("pumpN", d) * 3); // 2–5 sessions/day
+        return Array.from({ length: n }, (_, s) => ({
+          min: 40 + Math.round(seeded(`pumpMl${d}`, s) * 120), // 40–160 ml/session
+          q: qual(seeded(`pumpQual${d}`, s)),
+        }));
+      });
+      const totals = sessions.map((day) => day.reduce((a, b) => a + b.min, 0));
+      const avg = r0(mean(totals));
       return {
         title: "Pumping",
         unit: "ml",
         yMin: 0,
         yMax: 1000,
         yTicks: [0, 500, 1000],
-        series: [{ label: "Pumped", color: "var(--color-cat-food)" }],
-        layout: "single",
-        data: ml.map((v) => [v]),
-        showLegend: false,
-        blurb: "Total volume pumped per day (ml).",
+        series: [
+          { label: "Poor", color: "#c7cbd1" }, // grey
+          { label: "Okay", color: "#9ad6ab" }, // light green
+          { label: "Good", color: "#3fa564" }, // standard green
+        ],
+        layout: "stack",
+        data: totals.map((t) => [t]),
+        sessions,
+        showLegend: true,
+        blurb: "Each block is one pumping session — grey = poor, light green = okay, green = good. Millilitres per day.",
         footer: () => `${avg} ml daily avg`,
       };
     }

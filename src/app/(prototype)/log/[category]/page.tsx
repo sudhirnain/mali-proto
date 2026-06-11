@@ -186,6 +186,9 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const showQuantity = cat.id === "bottle" || cat.id === "pumping";
   const showMilkType = cat.id === "bottle";
   const showComments = isSleep || cat.id === "bottle" || cat.id === "pumping";
+  // Pumping rates like nursing (Jonas Jun-11 follow-up), but pre-set to Okay —
+  // a so-so pump is the typical session, unlike nursing's Good default.
+  const showQuality = cat.id === "pumping";
 
   const defaultEnd = editing?.at ? new Date(editing.at) : new Date();
   const defaultStart = editing?.durationMin
@@ -200,6 +203,7 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
   const [side, setSide] = useState<"left" | "right" | "both">(() => parseSide(editing?.meta) ?? "right");
   const [quantityMl, setQuantityMl] = useState<number>(() => parseMl(editing?.meta) ?? (cat.id === "bottle" ? 120 : 90));
   const [milkType, setMilkType] = useState<"Breast milk" | "Formula">(() => (/formula/i.test(editing?.meta ?? "") ? "Formula" : "Breast milk"));
+  const [quality, setQuality] = useState<"Poor" | "Okay" | "Good">(() => parseQuality(editing?.meta) ?? "Okay");
   const [comments, setComments] = useState<string>("");
   const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
 
@@ -322,6 +326,29 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
             />
           )}
 
+          {showQuality && (
+            <Field label="How did it go?">
+              <div className="flex gap-2">
+                {(["Poor", "Okay", "Good"] as const).map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => setQuality(q)}
+                    aria-pressed={quality === q}
+                    className={`flex-1 py-2 rounded-full text-sm font-semibold border transition ${
+                      quality === q
+                        ? "text-white border-transparent"
+                        : "text-neutral-600 border-neutral-200 bg-white active:bg-neutral-50"
+                    }`}
+                    style={quality === q ? { backgroundColor: accent } : undefined}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
+
           {showComments && (
             <Field label="Comments (optional)">
               <textarea
@@ -353,6 +380,7 @@ function TimerEntryForm({ cat, editing }: { cat: Category; editing?: Entry }) {
               if (showQuantity) parts.push(`${quantityMl}ml`);
               if (showMilkType) parts.push(milkType);
               if (showSide) parts.push(side);
+              if (showQuality) parts.push(quality);
               const baseMeta = parts.join(", ");
               const note = comments.trim();
               save({
@@ -658,6 +686,11 @@ function parseMl(meta?: string): number | null {
   if (!meta) return null;
   const m = meta.match(/(\d+)\s*ml/i);
   return m ? Number(m[1]) : null;
+}
+
+function parseQuality(meta?: string): "Poor" | "Okay" | "Good" | null {
+  const m = meta?.match(/\b(Poor|Okay|Good)\b/);
+  return (m?.[1] as "Poor" | "Okay" | "Good") ?? null;
 }
 
 function formatDurationShort(min: number): string {

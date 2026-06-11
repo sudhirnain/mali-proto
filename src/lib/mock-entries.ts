@@ -119,7 +119,7 @@ export const MOCK_ENTRIES: Entry[] = [
   { id: "pa2", categoryId: "solids", at: iso(8 * HOUR), meta: "Fruit, mashed pear" },
 
   // Yesterday
-  { id: "pa3", categoryId: "pumping", at: iso(DAY + 6 * HOUR), durationMin: 8, meta: "8 min, 90ml, both" },
+  { id: "pa3", categoryId: "pumping", at: iso(DAY + 6 * HOUR), durationMin: 8, meta: "8 min, 90ml, both, Okay" },
   { id: "pa4", categoryId: "medications", at: iso(DAY + 2 * HOUR), meta: "Vitamin D, 1 drop" },
 
   // 2 days ago
